@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (RT-PhysicsCore "RT-PhysicsCore.cpp" "RT-PhysicsCore.h")
+add_executable (RT-PhysicsCore "main.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET RT-PhysicsCore PROPERTY CXX_STANDARD 20)

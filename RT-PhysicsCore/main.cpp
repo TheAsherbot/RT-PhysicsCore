@@ -1,12 +1,12 @@
 ﻿// main.cpp : Defines the entry point for the application.
 //
 
-#include "main.h"
+#include "iostream"
 
 using namespace std;
 
 int main()
 {
-	cout << "Hello CMake." << endl;
+	cout << "Hello RT-PhysicsCore." << endl;
 	return 0;
 }
