@@ -1,12 +1,7 @@
-﻿# CMakeList.txt : CMake project for RT-PhysicsCore, include source and define
-# project specific logic here.
-#
+﻿# add_subdirectory(external/glfw)
+add_subdirectory(src)
 
-# Add source to this project's executable.
+
 add_executable (RT-PhysicsCore "main.cpp")
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET RT-PhysicsCore PROPERTY CXX_STANDARD 20)
-endif()
-
-# TODO: Add tests and install targets if needed.
+target_link_libraries(RT-PhysicsCore PRIVATE RT_PhysicsEngine)
+# add_subdirectory(examples)

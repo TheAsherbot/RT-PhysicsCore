@@ -11,5 +11,4 @@ endif()
 
 project ("RT-PhysicsCore")
 
-# Include sub-projects.
 add_subdirectory ("RT-PhysicsCore")
