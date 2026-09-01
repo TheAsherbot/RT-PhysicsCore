@@ -1,4 +1,8 @@
-file(GLOB SRC_FILES *.cpp *.h)
+# file(GLOB SRC_FILES *.cpp *.h)
+
+
+add_subdirectory(core)
+add_subdirectory(utils)
 
 add_library(RT_PhysicsEngine STATIC ${SRC_FILES})
 
