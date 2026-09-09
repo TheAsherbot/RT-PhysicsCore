@@ -14,9 +14,13 @@
 
 ## Challenges
 - I did not understand how CMakeLists.txt worked
+- I did not understand how to add GLM to CMake to auto build.
+- I ran out of time before my 5 Labor Day weekend trip started.
 
 ## Solutions / Decisions
-- I had to spend a lot of time learning that
+- I had to spend a lot of time learning CMake and how to add GLM to the project. I decided to use the CMake FetchContent module to download and build GLM automatically.
 
 ## Next Week
+- Add ECS design
+- Add Logging system
 - Begin window creation for OpenGL layer

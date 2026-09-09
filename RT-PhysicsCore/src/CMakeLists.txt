@@ -23,3 +23,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 target_link_libraries(RT_PhysicsEngine PUBLIC glm::glm-header-only)
+

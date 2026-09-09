@@ -1,5 +1,6 @@
 
-add_subdirectory(ecs)
+add_subdirectory(core)
+add_subdirectory(systems)
 
 file(GLOB CORE_SRC *.cpp *.h)
 
