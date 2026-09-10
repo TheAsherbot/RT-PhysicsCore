@@ -49,10 +49,10 @@ namespace RT_PhysicsCore
 
             double alpha = fixedTimestep->Alpha();
 
-            if (renderCallback)
-                renderCallback(alpha);
 			if (updateCallback)
 				updateCallback(deltaTime);
+            if (renderCallback)
+                renderCallback(alpha);
         }
     }
 }

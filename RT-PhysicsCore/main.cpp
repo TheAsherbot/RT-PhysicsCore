@@ -3,15 +3,19 @@
 
 #include <conio.h>
 
-#include "iostream"
-#include "include/RT-PhysicsCore/core/Engine.h"
+#include <iostream>
+#include "RT-PhysicsCore/core/Engine.h"
 
 
-#include "include/RT-PhysicsCore/core/ecs/core/Scene.h"
-#include "include/RT-PhysicsCore/core/ecs/core/System.h"
-#include "include/RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
-#include "include/RT-PhysicsCore/core/ecs/systems/PhysicsSystem.h"
-#include "include/RT-PhysicsCore/core/ecs/systems/RenderSystem.h"
+#include "RT-PhysicsCore/core/ecs/core/Entity.h"
+#include "RT-PhysicsCore/core/ecs/core/Scene.h"
+#include "RT-PhysicsCore/core/ecs/core/System.h"
+#include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
+#include "RT-PhysicsCore/core/ecs/systems/PhysicsSystem.h"
+#include "RT-PhysicsCore/core/ecs/systems/RenderSystem.h"
+
+#include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
+#include "RT-PhysicsCore/core/ecs/components/RigidBodyComponent.h"
 
 
 int main()
@@ -31,11 +35,11 @@ int main()
     RT_PhysicsCore::Entity e = scene.CreateEntity();
 
     RT_PhysicsCore::TransformComponent t;
-    t.position = { 0.0f, 0.0f, 0.0f };
+    t.position = { -2.0f, 60.0f, 0.0f };
 
     RT_PhysicsCore::RigidBodyComponent rb;
     rb.mass = 1.0f;
-    rb.velocity = { 1.0f, 0.0f, 0.0f };
+    rb.velocity = { 0.5f, -9.81f, 0.0f };
 
     scene.AddComponent(e, t);
     scene.AddComponent(e, rb);

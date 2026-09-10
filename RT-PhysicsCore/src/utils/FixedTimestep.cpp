@@ -13,7 +13,8 @@ namespace RT_PhysicsCore
     FixedTimestep::FixedTimestep(double hz)
         : fixedDelta(1.0 / hz),
         accumulator(0.0),
-        lastTime(NowSeconds())
+        lastTime(NowSeconds()),
+        frameDelta(0.0f)
     {}
 
     void FixedTimestep::SetFrequency(double hz)

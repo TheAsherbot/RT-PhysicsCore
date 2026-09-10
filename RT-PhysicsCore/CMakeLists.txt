@@ -1,4 +1,6 @@
-﻿# add_subdirectory(external/glfw)
+﻿# RT-PhysicsCore\CMakeLists.txt 
+
+# add_subdirectory(external/glfw)
 add_subdirectory(src)
 
 
