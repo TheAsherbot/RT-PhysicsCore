@@ -1,4 +1,5 @@
 #include "FixedTimestep.h"
+#include "RT-PhysicsCore/utils/Log.h"
 #include <chrono>
 
 namespace RT_PhysicsCore
@@ -14,7 +15,7 @@ namespace RT_PhysicsCore
         : fixedDelta(1.0 / hz),
         accumulator(0.0),
         lastTime(NowSeconds()),
-        frameDelta(0.0f)
+        frameDelta(0.0)
     {}
 
     void FixedTimestep::SetFrequency(double hz)
@@ -36,7 +37,11 @@ namespace RT_PhysicsCore
         // Clamp to avoid spiral of death
         double maxFrameDelta = fixedDelta * 4.0;
         if (frameDelta > maxFrameDelta)
+        {
+            RT_LOG_WARN("Frame delta clamped: " << frameDelta << "s -> " << maxFrameDelta
+                << "s (possible stall - breakpoint, OS hitch, or heavy frame)");
             frameDelta = maxFrameDelta;
+        }
 
         accumulator += frameDelta;
 
@@ -55,8 +60,8 @@ namespace RT_PhysicsCore
         return accumulator / fixedDelta;
     }
 
-	double FixedTimestep::DeltaSeconds() const
-	{
-		return frameDelta;
-	}
+    double FixedTimestep::DeltaSeconds() const
+    {
+        return frameDelta;
+    }
 }

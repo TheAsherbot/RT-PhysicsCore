@@ -9,6 +9,8 @@
 
 ## What I accomplished
 - Added the foundation for the ECS design
+- Added a logging system
+- Reorginized the project structure to be more modular and easier to navigate
 
 ## Challenges
 - Never looked into the backend of ECS design before, so it was a bit of a challenge to understand how to implement it in a way that is efficient and flexible.

@@ -1,8 +1,10 @@
+#include <iostream>
+
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 
-#include <iostream>
+#include "RT-PhysicsCore/Utils/Log.h"
 
 namespace RT_PhysicsCore
 {
@@ -25,10 +27,10 @@ namespace RT_PhysicsCore
             if (!world)
                 continue;
 
-            std::cout << "Entity " << e << " position: "
-                      << world->worldPosition.x << ", "
-                      << world->worldPosition.y << ", "
-                      << world->worldPosition.z << "\n";
+			RT_LOG_INFO("Entity " << e << " position: "
+				<< world->worldPosition.x << ", "
+				<< world->worldPosition.y << ", "
+				<< world->worldPosition.z);
         }
     }
 }
