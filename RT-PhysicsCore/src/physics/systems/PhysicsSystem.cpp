@@ -1,7 +1,7 @@
-#include "RT-PhysicsCore/core/ecs/systems/PhysicsSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/core/ecs/components/RigidBodyComponent.h"
+#include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 
 namespace RT_PhysicsCore
 {

@@ -1,4 +1,4 @@
-#include "RT-PhysicsCore/core/ecs/systems/RenderSystem.h"
+#include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 

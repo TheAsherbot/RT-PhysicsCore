@@ -9,10 +9,6 @@
 #include "RT-PhysicsCore/core/ecs/core/Entity.h"
 #include "RT-PhysicsCore/core/ecs/core/IComponentStorage.h"
 #include "RT-PhysicsCore/core/ecs/core/ComponentStorage.h"
-#include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/core/ecs/components/RigidBodyComponent.h"
-#include "RT-PhysicsCore/core/ecs/components/ColliderComponent.h"
-#include "RT-PhysicsCore/core/ecs/components/HierarchyComponent.h"
 
 namespace RT_PhysicsCore
 {

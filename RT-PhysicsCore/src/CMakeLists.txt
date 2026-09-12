@@ -5,6 +5,8 @@
 
 add_subdirectory(core)
 add_subdirectory(utils)
+add_subdirectory(physics)
+add_subdirectory(rendering)
 
 add_library(RT_PhysicsEngine STATIC ${SRC_FILES})
 

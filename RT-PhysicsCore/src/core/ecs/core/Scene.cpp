@@ -2,6 +2,8 @@
 #include "RT-PhysicsCore/core/ecs/core/System.h" // Scene::~Scene() needs ISystem to be a complete type
 #include <algorithm>
 
+#include "RT-PhysicsCore/core/ecs/components/HierarchyComponent.h"
+
 namespace RT_PhysicsCore
 {
     // Defined here rather than defaulted in the header so that
