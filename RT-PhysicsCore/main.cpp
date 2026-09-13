@@ -1,11 +1,11 @@
 ﻿// main.cpp : Defines the entry point for the application.
 //
 
-#include <conio.h>
 #include <memory>
 
 #include "RT-PhysicsCore/core/Engine.h"
 #include "RT-PhysicsCore/utils/Log.h"
+#include "RT-PhysicsCore/utils/ConsoleInput.h"
 
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/core/System.h"
@@ -57,9 +57,8 @@ int main()
 		scene.SetDeltaTime(deltaTime);
 		scene.UpdateSystems();
 
-		if (_kbhit())
+		if (RT_PhysicsCore::ConsumeKeyPress())
 		{
-			_getch();
 			engine.RequestExit();
 		}
 		});
@@ -71,6 +70,6 @@ int main()
 
 	RT_LOG_INFO("START!");
 	engine.Run();
-
+	
 	return 0;
 }
