@@ -1,8 +1,8 @@
-# RT-PhysicsCore\src\rendering\CMakeLists.txt 
+# RT-PhysicsCore\external\glad\CMakeLists.txt 
 
-file(GLOB CORE_SRC *.cpp *.h)
+# file(GLOB CORE_SRC *.c *.h)
 
-add_subdirectory(systems)
+add_subdirectory(src)
 
 set(SRC_FILES ${SRC_FILES} ${CORE_SRC} PARENT_SCOPE)
 

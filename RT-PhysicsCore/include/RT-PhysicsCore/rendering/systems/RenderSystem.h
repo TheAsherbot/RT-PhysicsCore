@@ -4,11 +4,16 @@
 
 namespace RT_PhysicsCore
 {
+    class Renderer;
+
     class RenderSystem : public ISystem
     {
     public:
-        explicit RenderSystem(Scene& scene);
+        RenderSystem(Scene& scene, Renderer& renderer);
 
         void RenderUpdate() override;
+
+    private:
+        Renderer& renderer;
     };
 }

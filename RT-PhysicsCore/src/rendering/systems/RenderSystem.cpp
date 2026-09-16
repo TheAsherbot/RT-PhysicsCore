@@ -1,36 +1,31 @@
-#include <iostream>
-
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
+#include "RT-PhysicsCore/rendering/Renderer.h"
+#include "RT-PhysicsCore/rendering/components/MeshComponent.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 
-#include "RT-PhysicsCore/Utils/Log.h"
-
 namespace RT_PhysicsCore
 {
-    RenderSystem::RenderSystem(Scene& scene)
-        : ISystem(scene)
+    RenderSystem::RenderSystem(Scene& scene, Renderer& renderer)
+        : ISystem(scene), renderer(renderer)
     {}
 
     void RenderSystem::RenderUpdate()
     {
-        // WorldTransformComponent, not TransformComponent: a child entity's
-        // local position is relative to its parent, so printing it directly
-        // would report the wrong location for anything that's parented.
-        // WorldTransformComponent is kept up to date by
-        // TransformPropagationSystem, which must run (during UpdateSystems())
-        // before this system's RenderUpdate() each frame.
-        auto entities = scene.Query<WorldTransformComponent>();
+        renderer.BeginFrame();
+
+        auto entities = scene.Query<MeshComponent, WorldTransformComponent>();
         for (Entity e : entities)
         {
-            auto* world = scene.GetComponent<WorldTransformComponent>(e);
-            if (!world)
+            auto* mesh = scene.GetComponent<MeshComponent>(e);
+            auto* worldTransform = scene.GetComponent<WorldTransformComponent>(e);
+            if (!mesh || !worldTransform)
                 continue;
 
-			RT_LOG_INFO("Entity " << e << " position: "
-				<< world->worldPosition.x << ", "
-				<< world->worldPosition.y << ", "
-				<< world->worldPosition.z);
+            renderer.DrawMesh(*mesh, *worldTransform);
         }
+
+        renderer.FlushDebugDraw();
+        renderer.EndFrame();
     }
 }
