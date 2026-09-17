@@ -1,4 +1,5 @@
 #include "RT-PhysicsCore/rendering/Camera.h"
+#include "RT-PhysicsCore/rendering/Input.h"
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cmath>
@@ -32,46 +33,35 @@ namespace RT_PhysicsCore
         return glm::normalize(glm::cross(Right(), Front()));
     }
 
-    void Camera::ProcessInput(GLFWwindow* window, float deltaTime)
+    void Camera::ProcessInput(Input& input, float deltaTime)
     {
-        float velocity = moveSpeed * deltaTime;
-        glm::vec3 front = Front();
-        glm::vec3 right = Right();
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) position += front * velocity;
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) position -= front * velocity;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) position -= right * velocity;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) position += right * velocity;
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) position += glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) position -= glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
-
-        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+        // Look around only while the right mouse button is held. Input
+        // handles the actual cursor hide/lock and re-baselines the delta
+        // the moment capture starts, so releasing and re-pressing never
+        // causes the view to jump.
+        if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT))
         {
-            double mouseX, mouseY;
-            glfwGetCursorPos(window, &mouseX, &mouseY);
+            input.SetCursorCaptured(true);
 
-            if (firstMouseSample)
-            {
-                lastMouseX = mouseX;
-                lastMouseY = mouseY;
-                firstMouseSample = false;
-            }
-
-            double deltaX = mouseX - lastMouseX;
-            double deltaY = lastMouseY - mouseY; // screen Y grows downward; pitch should increase looking up
-            lastMouseX = mouseX;
-            lastMouseY = mouseY;
-
-            yawDegrees += static_cast<float>(deltaX) * mouseSensitivity;
-            pitchDegrees += static_cast<float>(deltaY) * mouseSensitivity;
+            yawDegrees += static_cast<float>(input.MouseDeltaX()) * mouseSensitivity;
+            pitchDegrees += static_cast<float>(-input.MouseDeltaY()) * mouseSensitivity; // screen Y grows downward
             pitchDegrees = std::clamp(pitchDegrees, -89.0f, 89.0f); // avoid gimbal flip at the poles
         }
         else
         {
-            // Cursor isn't captured - next time it is, don't jump using a
-            // stale delta from wherever the mouse happened to be.
-            firstMouseSample = true;
+            input.SetCursorCaptured(false);
         }
+
+        float velocity = moveSpeed * deltaTime;
+        glm::vec3 front = Front();
+        glm::vec3 right = Right();
+
+        if (input.IsKeyDown(GLFW_KEY_W)) position += front * velocity;
+        if (input.IsKeyDown(GLFW_KEY_S)) position -= front * velocity;
+        if (input.IsKeyDown(GLFW_KEY_A)) position -= right * velocity;
+        if (input.IsKeyDown(GLFW_KEY_D)) position += right * velocity;
+        if (input.IsKeyDown(GLFW_KEY_SPACE)) position += glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
+        if (input.IsKeyDown(GLFW_KEY_LEFT_CONTROL)) position -= glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
     }
 
     glm::mat4 Camera::GetViewMatrix() const

@@ -7,7 +7,7 @@
 // glad must be included before GLFW - GLFW pulls in system GL headers
 // unless it detects a loader was already included, which causes macro
 // redefinition errors if the order is reversed.
-#include "glad/gl.h"
+#include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -111,16 +111,16 @@ void main()
         {
             std::vector<MeshVertex> v;
             auto face = [&](glm::vec3 n, glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d)
-            {
-                v.push_back({a, n}); v.push_back({b, n}); v.push_back({c, n});
-                v.push_back({a, n}); v.push_back({c, n}); v.push_back({d, n});
-            };
-            face({0,0,1},  {-0.5f,-0.5f,0.5f}, {0.5f,-0.5f,0.5f}, {0.5f,0.5f,0.5f}, {-0.5f,0.5f,0.5f});
-            face({0,0,-1}, {0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,-0.5f}, {-0.5f,0.5f,-0.5f}, {0.5f,0.5f,-0.5f});
-            face({1,0,0},  {0.5f,-0.5f,0.5f}, {0.5f,-0.5f,-0.5f}, {0.5f,0.5f,-0.5f}, {0.5f,0.5f,0.5f});
-            face({-1,0,0}, {-0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,0.5f}, {-0.5f,0.5f,0.5f}, {-0.5f,0.5f,-0.5f});
-            face({0,1,0},  {-0.5f,0.5f,0.5f}, {0.5f,0.5f,0.5f}, {0.5f,0.5f,-0.5f}, {-0.5f,0.5f,-0.5f});
-            face({0,-1,0}, {-0.5f,-0.5f,-0.5f}, {0.5f,-0.5f,-0.5f}, {0.5f,-0.5f,0.5f}, {-0.5f,-0.5f,0.5f});
+                {
+                    v.push_back({ a, n }); v.push_back({ b, n }); v.push_back({ c, n });
+                    v.push_back({ a, n }); v.push_back({ c, n }); v.push_back({ d, n });
+                };
+            face({ 0,0,1 }, { -0.5f,-0.5f,0.5f }, { 0.5f,-0.5f,0.5f }, { 0.5f,0.5f,0.5f }, { -0.5f,0.5f,0.5f });
+            face({ 0,0,-1 }, { 0.5f,-0.5f,-0.5f }, { -0.5f,-0.5f,-0.5f }, { -0.5f,0.5f,-0.5f }, { 0.5f,0.5f,-0.5f });
+            face({ 1,0,0 }, { 0.5f,-0.5f,0.5f }, { 0.5f,-0.5f,-0.5f }, { 0.5f,0.5f,-0.5f }, { 0.5f,0.5f,0.5f });
+            face({ -1,0,0 }, { -0.5f,-0.5f,-0.5f }, { -0.5f,-0.5f,0.5f }, { -0.5f,0.5f,0.5f }, { -0.5f,0.5f,-0.5f });
+            face({ 0,1,0 }, { -0.5f,0.5f,0.5f }, { 0.5f,0.5f,0.5f }, { 0.5f,0.5f,-0.5f }, { -0.5f,0.5f,-0.5f });
+            face({ 0,-1,0 }, { -0.5f,-0.5f,-0.5f }, { 0.5f,-0.5f,-0.5f }, { 0.5f,-0.5f,0.5f }, { -0.5f,-0.5f,0.5f });
             return v;
         }
 
@@ -129,12 +129,12 @@ void main()
             // Unit quad on XZ, facing +Y - matches this project's Y-up convention.
             std::vector<MeshVertex> v;
             glm::vec3 n(0.0f, 1.0f, 0.0f);
-            v.push_back({{-0.5f, 0.0f, -0.5f}, n});
-            v.push_back({{ 0.5f, 0.0f, -0.5f}, n});
-            v.push_back({{ 0.5f, 0.0f,  0.5f}, n});
-            v.push_back({{-0.5f, 0.0f, -0.5f}, n});
-            v.push_back({{ 0.5f, 0.0f,  0.5f}, n});
-            v.push_back({{-0.5f, 0.0f,  0.5f}, n});
+            v.push_back({ {-0.5f, 0.0f, -0.5f}, n });
+            v.push_back({ { 0.5f, 0.0f, -0.5f}, n });
+            v.push_back({ { 0.5f, 0.0f,  0.5f}, n });
+            v.push_back({ {-0.5f, 0.0f, -0.5f}, n });
+            v.push_back({ { 0.5f, 0.0f,  0.5f}, n });
+            v.push_back({ {-0.5f, 0.0f,  0.5f}, n });
             return v;
         }
 
@@ -159,13 +159,13 @@ void main()
                     glm::vec3 p10(r1 * std::cos(lon0), y1, r1 * std::sin(lon0));
                     glm::vec3 p11(r1 * std::cos(lon1), y1, r1 * std::sin(lon1));
 
-                    v.push_back({p00 * radius, glm::normalize(p00)});
-                    v.push_back({p10 * radius, glm::normalize(p10)});
-                    v.push_back({p11 * radius, glm::normalize(p11)});
+                    v.push_back({ p00 * radius, glm::normalize(p00) });
+                    v.push_back({ p10 * radius, glm::normalize(p10) });
+                    v.push_back({ p11 * radius, glm::normalize(p11) });
 
-                    v.push_back({p00 * radius, glm::normalize(p00)});
-                    v.push_back({p11 * radius, glm::normalize(p11)});
-                    v.push_back({p01 * radius, glm::normalize(p01)});
+                    v.push_back({ p00 * radius, glm::normalize(p00) });
+                    v.push_back({ p11 * radius, glm::normalize(p11) });
+                    v.push_back({ p01 * radius, glm::normalize(p01) });
                 }
             }
             return v;
@@ -222,13 +222,13 @@ void main()
             glGenBuffers(1, &mesh.vbo);
             glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
             glBufferData(GL_ARRAY_BUFFER,
-                         static_cast<GLsizeiptr>(vertices.size() * sizeof(MeshVertex)),
-                         vertices.data(), GL_STATIC_DRAW);
+                static_cast<GLsizeiptr>(vertices.size() * sizeof(MeshVertex)),
+                vertices.data(), GL_STATIC_DRAW);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshVertex),
-                                   reinterpret_cast<void*>(offsetof(MeshVertex, position)));
+                reinterpret_cast<void*>(offsetof(MeshVertex, position)));
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MeshVertex),
-                                   reinterpret_cast<void*>(offsetof(MeshVertex, normal)));
+                reinterpret_cast<void*>(offsetof(MeshVertex, normal)));
             glEnableVertexAttribArray(1);
             glBindVertexArray(0);
             return mesh;
@@ -253,6 +253,7 @@ void main()
         GLuint debugLineVbo = 0;
 
         Camera camera;
+        Input input;
         double lastFrameTime = 0.0;
     };
 
@@ -281,6 +282,8 @@ void main()
         glfwMakeContextCurrent(impl->window);
         glfwSetFramebufferSizeCallback(impl->window, FramebufferSizeCallback);
 
+        impl->input.AttachWindow(impl->window);
+
         int gladVersion = gladLoadGL(glfwGetProcAddress);
         if (gladVersion == 0)
         {
@@ -291,7 +294,7 @@ void main()
             return;
         }
         RT_LOG_INFO("OpenGL " << GLAD_VERSION_MAJOR(gladVersion) << "."
-                    << GLAD_VERSION_MINOR(gladVersion) << " loaded");
+            << GLAD_VERSION_MINOR(gladVersion) << " loaded");
 
         glEnable(GL_DEPTH_TEST);
         glViewport(0, 0, width, height);
@@ -317,10 +320,10 @@ void main()
         glGenBuffers(1, &impl->debugLineVbo);
         glBindBuffer(GL_ARRAY_BUFFER, impl->debugLineVbo);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(DebugLineVertex),
-                               reinterpret_cast<void*>(offsetof(DebugLineVertex, position)));
+            reinterpret_cast<void*>(offsetof(DebugLineVertex, position)));
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(DebugLineVertex),
-                               reinterpret_cast<void*>(offsetof(DebugLineVertex, color)));
+            reinterpret_cast<void*>(offsetof(DebugLineVertex, color)));
         glEnableVertexAttribArray(1);
         glBindVertexArray(0);
 
@@ -363,11 +366,12 @@ void main()
         if (!impl->valid) return;
 
         glfwPollEvents();
+        impl->input.Update();
 
         double now = glfwGetTime();
         float dt = static_cast<float>(now - impl->lastFrameTime);
         impl->lastFrameTime = now;
-        impl->camera.ProcessInput(impl->window, dt);
+        impl->camera.ProcessInput(impl->input, dt);
 
         glClearColor(0.08f, 0.08f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -387,8 +391,8 @@ void main()
         // TransformPropagationSystem already uses when it composes world
         // transforms, so this stays consistent with it.
         glm::mat4 model = glm::translate(glm::mat4(1.0f), worldTransform.worldPosition)
-                         * glm::mat4_cast(worldTransform.worldRotation)
-                         * glm::scale(glm::mat4(1.0f), worldTransform.worldScale);
+            * glm::mat4_cast(worldTransform.worldRotation)
+            * glm::scale(glm::mat4(1.0f), worldTransform.worldScale);
 
         int fbWidth = 1, fbHeight = 1;
         glfwGetFramebufferSize(impl->window, &fbWidth, &fbHeight);
@@ -397,9 +401,9 @@ void main()
         glUseProgram(impl->meshProgram);
         glUniformMatrix4fv(glGetUniformLocation(impl->meshProgram, "uModel"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(impl->meshProgram, "uView"), 1, GL_FALSE,
-                            glm::value_ptr(impl->camera.GetViewMatrix()));
+            glm::value_ptr(impl->camera.GetViewMatrix()));
         glUniformMatrix4fv(glGetUniformLocation(impl->meshProgram, "uProjection"), 1, GL_FALSE,
-                            glm::value_ptr(impl->camera.GetProjectionMatrix(aspect)));
+            glm::value_ptr(impl->camera.GetProjectionMatrix(aspect)));
         glUniform3fv(glGetUniformLocation(impl->meshProgram, "uColor"), 1, glm::value_ptr(mesh.color));
         glm::vec3 lightDir = glm::normalize(glm::vec3(-0.4f, -1.0f, -0.3f));
         glUniform3fv(glGetUniformLocation(impl->meshProgram, "uLightDir"), 1, glm::value_ptr(lightDir));
@@ -418,7 +422,7 @@ void main()
 
         glBindBuffer(GL_ARRAY_BUFFER, impl->debugLineVbo);
         glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(lines.size() * sizeof(DebugLineVertex)),
-                     lines.data(), GL_DYNAMIC_DRAW);
+            lines.data(), GL_DYNAMIC_DRAW);
 
         int fbWidth = 1, fbHeight = 1;
         glfwGetFramebufferSize(impl->window, &fbWidth, &fbHeight);
@@ -426,9 +430,9 @@ void main()
 
         glUseProgram(impl->debugLineProgram);
         glUniformMatrix4fv(glGetUniformLocation(impl->debugLineProgram, "uView"), 1, GL_FALSE,
-                            glm::value_ptr(impl->camera.GetViewMatrix()));
+            glm::value_ptr(impl->camera.GetViewMatrix()));
         glUniformMatrix4fv(glGetUniformLocation(impl->debugLineProgram, "uProjection"), 1, GL_FALSE,
-                            glm::value_ptr(impl->camera.GetProjectionMatrix(aspect)));
+            glm::value_ptr(impl->camera.GetProjectionMatrix(aspect)));
 
         glBindVertexArray(impl->debugLineVao);
         glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(lines.size()));
@@ -442,4 +446,7 @@ void main()
 
     Camera& Renderer::GetCamera() { return impl->camera; }
     const Camera& Renderer::GetCamera() const { return impl->camera; }
+
+    Input& Renderer::GetInput() { return impl->input; }
+    const Input& Renderer::GetInput() const { return impl->input; }
 }

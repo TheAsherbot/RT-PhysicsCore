@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "RT-PhysicsCore/rendering/Camera.h"
+#include "RT-PhysicsCore/rendering/Input.h"
 
 namespace RT_PhysicsCore
 {
@@ -34,7 +35,8 @@ namespace RT_PhysicsCore
 
         bool ShouldClose() const;
 
-        // Polls window/input events, advances the camera, clears the screen.
+        // Polls window/input events, advances Input and the camera, clears
+        // the screen.
         void BeginFrame();
 
         // Draws one entity's mesh using the current camera. No-op if
@@ -49,6 +51,11 @@ namespace RT_PhysicsCore
 
         Camera& GetCamera();
         const Camera& GetCamera() const;
+
+        // Keyboard/mouse state for this window - safe to query from
+        // anywhere (main.cpp, other systems), not just Camera.
+        Input& GetInput();
+        const Input& GetInput() const;
 
     private:
         struct Impl;
