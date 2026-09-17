@@ -13,6 +13,14 @@ namespace RT_PhysicsCore
         glm::vec3 color;
     };
 
+    // Separates lines by depth-test behavior so Renderer can draw them in
+    // appropriate passes without needing per-vertex state flags.
+    struct DebugDrawData
+    {
+        std::vector<DebugLineVertex> depthTestedLines;
+        std::vector<DebugLineVertex> alwaysOnTopLines;
+    };
+
     // Immediate-mode debug drawing: call Line()/Box()/Sphere() from
     // anywhere - PhysicsSystem, a future CollisionSystem, application code
     // - to queue shapes for this frame. Deliberately has no OpenGL
@@ -26,17 +34,17 @@ namespace RT_PhysicsCore
     class DebugDraw
     {
     public:
-        static void Line(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color);
+        static void Line(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color, bool depthTest = true);
 
         // Axis-aligned box, drawn as 12 edges.
-        static void Box(const glm::vec3& center, const glm::vec3& halfExtents, const glm::vec3& color);
+        static void Box(const glm::vec3& center, const glm::vec3& halfExtents, const glm::vec3& color, bool depthTest = true);
 
         // Wireframe sphere, drawn as three orthogonal great-circle rings.
-        static void Sphere(const glm::vec3& center, float radius, const glm::vec3& color, int segments = 16);
+        static void Sphere(const glm::vec3& center, float radius, const glm::vec3& color, int segments = 16, bool depthTest = true);
 
         // Renderer-only: returns and clears the accumulated buffer for
         // this frame. Calling this from anywhere else would steal the
         // lines out from under Renderer before it draws them.
-        static std::vector<DebugLineVertex> TakeLines();
+        static DebugDrawData TakeLines();
     };
 }

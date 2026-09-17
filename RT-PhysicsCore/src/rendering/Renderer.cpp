@@ -416,13 +416,9 @@ void main()
     {
         if (!impl->valid) return;
 
-        std::vector<DebugLineVertex> lines = DebugDraw::TakeLines();
-        if (lines.empty())
+        DebugDrawData debugData = DebugDraw::TakeLines();
+        if (debugData.depthTestedLines.empty() && debugData.alwaysOnTopLines.empty())
             return;
-
-        glBindBuffer(GL_ARRAY_BUFFER, impl->debugLineVbo);
-        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(lines.size() * sizeof(DebugLineVertex)),
-            lines.data(), GL_DYNAMIC_DRAW);
 
         int fbWidth = 1, fbHeight = 1;
         glfwGetFramebufferSize(impl->window, &fbWidth, &fbHeight);
@@ -435,7 +431,34 @@ void main()
             glm::value_ptr(impl->camera.GetProjectionMatrix(aspect)));
 
         glBindVertexArray(impl->debugLineVao);
-        glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(lines.size()));
+        glBindBuffer(GL_ARRAY_BUFFER, impl->debugLineVbo);
+
+        const GLsizei depthTestedCount = static_cast<GLsizei>(debugData.depthTestedLines.size());
+        const GLsizei alwaysOnTopCount = static_cast<GLsizei>(debugData.alwaysOnTopLines.size());
+
+        // Pack both lists into a single buffer upload
+        debugData.depthTestedLines.insert(
+            debugData.depthTestedLines.end(),
+            debugData.alwaysOnTopLines.begin(),
+            debugData.alwaysOnTopLines.end());
+
+        glBufferData(GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(debugData.depthTestedLines.size() * sizeof(DebugLineVertex)),
+            debugData.depthTestedLines.data(), GL_DYNAMIC_DRAW);
+
+        // 1. Draw depth-tested lines (occluded by scene meshes)
+        if (depthTestedCount > 0)
+        {
+            glDrawArrays(GL_LINES, 0, depthTestedCount);
+        }
+
+        // 2. Draw overlay lines (draws on top of everything)
+        if (alwaysOnTopCount > 0)
+        {
+            glDisable(GL_DEPTH_TEST);
+            glDrawArrays(GL_LINES, depthTestedCount, alwaysOnTopCount);
+            glEnable(GL_DEPTH_TEST); // Restore default state
+        }
     }
 
     void Renderer::EndFrame()

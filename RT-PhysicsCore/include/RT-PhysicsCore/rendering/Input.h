@@ -50,9 +50,13 @@ namespace RT_PhysicsCore
         void SetCursorCaptured(bool captured);
         bool IsCursorCaptured() const;
 
+        double MouseScrollDeltaY() const;
+
     private:
         static constexpr int kMaxKeys = 512;
         static constexpr int kMaxMouseButtons = 8;
+
+        static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
         GLFWwindow* window = nullptr;
 
@@ -66,6 +70,7 @@ namespace RT_PhysicsCore
         double lastMouseY = 0.0;
         double mouseDeltaX = 0.0;
         double mouseDeltaY = 0.0;
+        double mouseScrollDeltaY = 0.0;
         bool firstUpdate = true;
 
         bool cursorCaptured = false;

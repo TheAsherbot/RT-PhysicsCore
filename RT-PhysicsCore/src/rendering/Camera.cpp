@@ -1,11 +1,12 @@
 #include "RT-PhysicsCore/rendering/Camera.h"
-#include "RT-PhysicsCore/rendering/Input.h"
+#include "RT-PhysicsCore/utils/Log.h"
+#include "RT-PhysicsCore/utils/DebugDraw.h"
+
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>   // optional but common
-
+#include <glm/gtc/type_ptr.hpp>
 
 namespace RT_PhysicsCore
 {
@@ -33,35 +34,82 @@ namespace RT_PhysicsCore
         return glm::normalize(glm::cross(Right(), Front()));
     }
 
+    void Camera::SetMode(Mode newMode)
+    {
+        if (newMode == mode)
+        {
+            return;
+        }
+
+        if (newMode == Mode::Orbit)
+        {
+            orbitTarget = position + Front() * orbitDistance;
+        }
+
+        mode = newMode;
+        RT_LOG_INFO("Camera: switched to " << (mode == Mode::Orbit ? "Orbit" : "Free-fly") << " mode");
+    }
+
     void Camera::ProcessInput(Input& input, float deltaTime)
     {
-        // Look around only while the right mouse button is held. Input
-        // handles the actual cursor hide/lock and re-baselines the delta
-        // the moment capture starts, so releasing and re-pressing never
-        // causes the view to jump.
-        if (input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT))
-        {
-            input.SetCursorCaptured(true);
+        // Capture cursor while right mouse button is held down; release when not
+        bool isLookButtonDown = input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
+		input.SetCursorCaptured(isLookButtonDown);
 
-            yawDegrees += static_cast<float>(input.MouseDeltaX()) * mouseSensitivity;
-            pitchDegrees += static_cast<float>(-input.MouseDeltaY()) * mouseSensitivity; // screen Y grows downward
-            pitchDegrees = std::clamp(pitchDegrees, -89.0f, 89.0f); // avoid gimbal flip at the poles
-        }
-        else
+        // --- Mode toggle (Tab) using edge-triggered check from Input ---
+        if (input.WasKeyPressed(GLFW_KEY_TAB))
         {
-            input.SetCursorCaptured(false);
+            SetMode(mode == Mode::FreeFly ? Mode::Orbit : Mode::FreeFly);
         }
+
+        // Consume scroll accumulated via ProcessScroll
+        double scrollThisFrame = input.MouseScrollDeltaY() - pendingScrollDelta;
+        pendingScrollDelta = input.MouseScrollDeltaY();
 
         float velocity = moveSpeed * deltaTime;
         glm::vec3 front = Front();
         glm::vec3 right = Right();
 
-        if (input.IsKeyDown(GLFW_KEY_W)) position += front * velocity;
-        if (input.IsKeyDown(GLFW_KEY_S)) position -= front * velocity;
-        if (input.IsKeyDown(GLFW_KEY_A)) position -= right * velocity;
-        if (input.IsKeyDown(GLFW_KEY_D)) position += right * velocity;
-        if (input.IsKeyDown(GLFW_KEY_SPACE)) position += glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
-        if (input.IsKeyDown(GLFW_KEY_LEFT_CONTROL)) position -= glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
+        if (mode == Mode::FreeFly)
+        {
+            if (input.IsKeyDown(GLFW_KEY_W))            position += front * velocity;
+            if (input.IsKeyDown(GLFW_KEY_S))            position -= front * velocity;
+            if (input.IsKeyDown(GLFW_KEY_A))            position -= right * velocity;
+            if (input.IsKeyDown(GLFW_KEY_D))            position += right * velocity;
+            if (input.IsKeyDown(GLFW_KEY_SPACE))        position += glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
+            if (input.IsKeyDown(GLFW_KEY_LEFT_CONTROL)) position -= glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
+        }
+        else // Mode::Orbit
+        {
+            if (input.IsKeyDown(GLFW_KEY_W))            orbitTarget += front * velocity;
+            if (input.IsKeyDown(GLFW_KEY_S))            orbitTarget -= front * velocity;
+            if (input.IsKeyDown(GLFW_KEY_A))            orbitTarget -= right * velocity;
+            if (input.IsKeyDown(GLFW_KEY_D))            orbitTarget += right * velocity;
+            if (input.IsKeyDown(GLFW_KEY_SPACE))        orbitTarget += glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
+            if (input.IsKeyDown(GLFW_KEY_LEFT_CONTROL)) orbitTarget -= glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
+
+            orbitDistance -= static_cast<float>(scrollThisFrame) * zoomSpeed;
+
+            orbitDistance = std::clamp(orbitDistance, minOrbitDistance, maxOrbitDistance);
+        }
+
+        // Apply mouse-look only when the cursor is captured
+        if (input.IsCursorCaptured())
+        {
+            double deltaX = input.MouseDeltaX();
+            // Input class delivers raw screen delta where downward is positive; invert for pitch look-up
+            double deltaY = -input.MouseDeltaY();
+
+            yawDegrees += static_cast<float>(deltaX) * mouseSensitivity;
+            pitchDegrees += static_cast<float>(deltaY) * mouseSensitivity;
+            pitchDegrees = std::clamp(pitchDegrees, -89.0f, 89.0f);
+        }
+
+        if (mode == Mode::Orbit)
+        {
+            position = orbitTarget - Front() * orbitDistance;
+			DebugDraw::Sphere(orbitTarget, 0.25f, glm::vec3(1.0f, 0.0f, 0.0f), 32, false); // small red sphere at camera position
+        }
     }
 
     glm::mat4 Camera::GetViewMatrix() const

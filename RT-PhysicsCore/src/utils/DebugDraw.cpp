@@ -5,7 +5,13 @@ namespace RT_PhysicsCore
 {
     namespace
     {
-        std::vector<DebugLineVertex>& Buffer()
+        std::vector<DebugLineVertex>& DepthTestedBuffer()
+        {
+            static std::vector<DebugLineVertex> buffer;
+            return buffer;
+        }
+
+        std::vector<DebugLineVertex>& AlwaysOnTopBuffer()
         {
             static std::vector<DebugLineVertex> buffer;
             return buffer;
@@ -14,13 +20,14 @@ namespace RT_PhysicsCore
         constexpr float kPi = 3.14159265358979323846f;
     }
 
-    void DebugDraw::Line(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color)
+    void DebugDraw::Line(const glm::vec3& a, const glm::vec3& b, const glm::vec3& color, bool depthTest)
     {
-        Buffer().push_back({a, color});
-        Buffer().push_back({b, color});
+        auto& buffer = depthTest ? DepthTestedBuffer() : AlwaysOnTopBuffer();
+        buffer.push_back({ a, color });
+        buffer.push_back({ b, color });
     }
 
-    void DebugDraw::Box(const glm::vec3& center, const glm::vec3& halfExtents, const glm::vec3& color)
+    void DebugDraw::Box(const glm::vec3& center, const glm::vec3& halfExtents, const glm::vec3& color, bool depthTest)
     {
         glm::vec3 h = halfExtents;
 
@@ -29,44 +36,44 @@ namespace RT_PhysicsCore
             center + glm::vec3(-h.x, -h.y,  h.z), // 1
             center + glm::vec3(-h.x,  h.y, -h.z), // 2
             center + glm::vec3(-h.x,  h.y,  h.z), // 3
-            center + glm::vec3( h.x, -h.y, -h.z), // 4
-            center + glm::vec3( h.x, -h.y,  h.z), // 5
-            center + glm::vec3( h.x,  h.y, -h.z), // 6
-            center + glm::vec3( h.x,  h.y,  h.z), // 7
+            center + glm::vec3(h.x, -h.y, -h.z), // 4
+            center + glm::vec3(h.x, -h.y,  h.z), // 5
+            center + glm::vec3(h.x,  h.y, -h.z), // 6
+            center + glm::vec3(h.x,  h.y,  h.z), // 7
         };
 
-        // bottom face (y = -h.y)
-        Line(c[0], c[4], color);
-        Line(c[4], c[5], color);
-        Line(c[5], c[1], color);
-        Line(c[1], c[0], color);
-        // top face (y = +h.y)
-        Line(c[2], c[6], color);
-        Line(c[6], c[7], color);
-        Line(c[7], c[3], color);
-        Line(c[3], c[2], color);
-        // vertical edges connecting the two faces
-        Line(c[0], c[2], color);
-        Line(c[4], c[6], color);
-        Line(c[5], c[7], color);
-        Line(c[1], c[3], color);
+        // bottom face
+        Line(c[0], c[4], color, depthTest);
+        Line(c[4], c[5], color, depthTest);
+        Line(c[5], c[1], color, depthTest);
+        Line(c[1], c[0], color, depthTest);
+        // top face
+        Line(c[2], c[6], color, depthTest);
+        Line(c[6], c[7], color, depthTest);
+        Line(c[7], c[3], color, depthTest);
+        Line(c[3], c[2], color, depthTest);
+        // vertical edges
+        Line(c[0], c[2], color, depthTest);
+        Line(c[4], c[6], color, depthTest);
+        Line(c[5], c[7], color, depthTest);
+        Line(c[1], c[3], color, depthTest);
     }
 
-    void DebugDraw::Sphere(const glm::vec3& center, float radius, const glm::vec3& color, int segments)
+    void DebugDraw::Sphere(const glm::vec3& center, float radius, const glm::vec3& color, int segments, bool depthTest)
     {
         if (segments < 3)
             segments = 3;
 
-        auto ring = [&](int axis) // 0 = XY plane, 1 = XZ plane, 2 = YZ plane
-        {
-            for (int i = 0; i < segments; ++i)
+        auto ring = [&](int axis)
             {
-                float a0 = (2.0f * kPi * i) / segments;
-                float a1 = (2.0f * kPi * (i + 1)) / segments;
-
-                glm::vec3 p0, p1;
-                switch (axis)
+                for (int i = 0; i < segments; ++i)
                 {
+                    float a0 = (2.0f * kPi * i) / segments;
+                    float a1 = (2.0f * kPi * (i + 1)) / segments;
+
+                    glm::vec3 p0, p1;
+                    switch (axis)
+                    {
                     case 0:
                         p0 = { std::cos(a0) * radius, std::sin(a0) * radius, 0.0f };
                         p1 = { std::cos(a1) * radius, std::sin(a1) * radius, 0.0f };
@@ -79,20 +86,23 @@ namespace RT_PhysicsCore
                         p0 = { 0.0f, std::cos(a0) * radius, std::sin(a0) * radius };
                         p1 = { 0.0f, std::cos(a1) * radius, std::sin(a1) * radius };
                         break;
+                    }
+                    Line(center + p0, center + p1, color, depthTest);
                 }
-                Line(center + p0, center + p1, color);
-            }
-        };
+            };
 
         ring(0);
         ring(1);
         ring(2);
     }
 
-    std::vector<DebugLineVertex> DebugDraw::TakeLines()
+    DebugDrawData DebugDraw::TakeLines()
     {
-        std::vector<DebugLineVertex> result = std::move(Buffer());
-        Buffer().clear(); // Buffer() is a fresh empty vector after the move, but explicit for clarity
+        DebugDrawData result;
+        result.depthTestedLines = std::move(DepthTestedBuffer());
+        result.alwaysOnTopLines = std::move(AlwaysOnTopBuffer());
+        DepthTestedBuffer().clear();
+        AlwaysOnTopBuffer().clear();
         return result;
     }
 }

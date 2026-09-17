@@ -12,6 +12,8 @@ namespace RT_PhysicsCore
             glfwGetCursorPos(window, &lastMouseX, &lastMouseY);
             mouseX = lastMouseX;
             mouseY = lastMouseY;
+            glfwSetWindowUserPointer(window, this);
+            glfwSetScrollCallback(window, ScrollCallback);
         }
         firstUpdate = true;
     }
@@ -67,6 +69,7 @@ namespace RT_PhysicsCore
     double Input::MouseY() const { return mouseY; }
     double Input::MouseDeltaX() const { return mouseDeltaX; }
     double Input::MouseDeltaY() const { return mouseDeltaY; }
+    double Input::MouseScrollDeltaY() const { return mouseScrollDeltaY; }
 
     void Input::SetCursorCaptured(bool captured)
     {
@@ -85,4 +88,13 @@ namespace RT_PhysicsCore
     }
 
     bool Input::IsCursorCaptured() const { return cursorCaptured; }
+
+    void Input::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+        auto* self = static_cast<Input*>(glfwGetWindowUserPointer(window));
+        if (self)
+        {
+            self->mouseScrollDeltaY += yoffset;
+        }
+    }
 }
