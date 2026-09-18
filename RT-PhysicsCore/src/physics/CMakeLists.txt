@@ -1,6 +1,6 @@
 # RT-PhysicsCore\src\physics\CMakeLists.txt 
 
-# file(GLOB CORE_SRC *.cpp *.h)
+file(GLOB CORE_SRC *.cpp *.h)
 
 add_subdirectory(systems)
 

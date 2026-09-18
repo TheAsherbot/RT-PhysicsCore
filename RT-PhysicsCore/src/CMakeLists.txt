@@ -28,6 +28,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 target_link_libraries(RT_PhysicsEngine PUBLIC glm::glm-header-only)
+target_include_directories(RT_PhysicsEngine
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/RT-PhysicsCore/include
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 
 # ------------------------------
 # GLFW 3.5.1

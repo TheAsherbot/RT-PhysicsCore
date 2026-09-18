@@ -40,7 +40,7 @@ namespace RT_PhysicsCore
             Orbit
         };
 
-        explicit Camera(glm::vec3 startPosition = glm::vec3(0.0f, 2.0f, 8.0f));
+        explicit Camera(glm::vec3 startPosition = glm::vec3(0.0f, 5.0f, 20.0f));
 
         void ProcessInput(Input& input, float deltaTime);
 

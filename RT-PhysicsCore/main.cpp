@@ -13,6 +13,7 @@
 
 #include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
+#include "RT-PhysicsCore/physics/MassProperties.h"
 
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
@@ -50,8 +51,11 @@ int main()
 	RT_PhysicsCore::TransformComponent t;
 	t.position = { -2.0f, 60.0f, 0.0f };
 
-	RT_PhysicsCore::RigidBodyComponent rb;
-	rb.mass = 1.0f;
+	// Unit sphere - radius matches TransformComponent's default scale of 1.
+	constexpr float sphereMass = 1.0f;
+	constexpr float sphereRadius = 1.0f;
+	RT_PhysicsCore::RigidBodyComponent rb = RT_PhysicsCore::MakeDynamicBody(
+		sphereMass, RT_PhysicsCore::ComputeSphereInertia(sphereMass, sphereRadius));
 	rb.velocity = { 0.5f, -9.81f, 0.0f };
 
 	RT_PhysicsCore::MeshComponent mesh;
