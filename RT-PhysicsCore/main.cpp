@@ -14,6 +14,8 @@
 #include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
+#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
+#include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
@@ -43,6 +45,7 @@ int main()
 	// Create systems
 	scene.AddSystem(std::make_unique<RT_PhysicsCore::TransformPropagationSystem>(scene));
 	scene.AddSystem(std::make_unique<RT_PhysicsCore::PhysicsSystem>(scene));
+	scene.AddSystem(std::make_unique<RT_PhysicsCore::CollisionSystem>(scene));
 	scene.AddSystem(std::make_unique<RT_PhysicsCore::RenderSystem>(scene, renderer));
 
 	// Create an entity
@@ -62,9 +65,14 @@ int main()
 	mesh.shape = RT_PhysicsCore::PrimitiveShape::Sphere;
 	mesh.color = { 0.9f, 0.3f, 0.2f };
 
+	RT_PhysicsCore::ColliderComponent collider;
+	collider.shape = RT_PhysicsCore::ColliderShape::Sphere;
+	collider.size = { sphereRadius, 0.0f, 0.0f };
+
 	scene.AddComponent(e, t);
 	scene.AddComponent(e, rb);
 	scene.AddComponent(e, mesh);
+	scene.AddComponent(e, collider);
 
 	// A visual-only ground plane - no RigidBodyComponent, so PhysicsSystem
 	// leaves it alone; it just sits there so falling objects have
@@ -76,8 +84,18 @@ int main()
 	RT_PhysicsCore::MeshComponent groundMesh;
 	groundMesh.shape = RT_PhysicsCore::PrimitiveShape::Plane;
 	groundMesh.color = { 0.3f, 0.45f, 0.3f };
+
+	// Box collider standing in for the plane (no Plane case in
+	// ColliderShape) - assumes a unit cube mesh (half-extent 0.5 before
+	// scale), so half-extents = scale * 0.5. Adjust if your renderer's
+	// unit cube uses a different convention.
+	RT_PhysicsCore::ColliderComponent groundCollider;
+	groundCollider.shape = RT_PhysicsCore::ColliderShape::Box;
+	groundCollider.size = groundTransform.scale * 0.5f;
+
 	scene.AddComponent(ground, groundTransform);
 	scene.AddComponent(ground, groundMesh);
+	scene.AddComponent(ground, groundCollider);
 
 	engine.SetRenderCallback([&](double alpha) {
 		scene.RenderUpdateSystems();

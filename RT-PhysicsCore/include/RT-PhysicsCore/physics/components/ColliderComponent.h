@@ -4,8 +4,6 @@
 
 namespace RT_PhysicsCore
 {
-    // Placeholder shape enum - swap this out for your engine's existing
-    // collision shape type/enum if one already exists.
     enum class ColliderShape
     {
         Box,
@@ -13,9 +11,13 @@ namespace RT_PhysicsCore
         Capsule
     };
 
+    // size's meaning depends on shape:
+    //   Box     - half-extents (x, y, z)
+    //   Sphere  - radius = size.x
+    //   Capsule - radius = size.x, half-length of the cylindrical section = size.y, axis = local +Y
     struct ColliderComponent
     {
-        ColliderShape shape{ColliderShape::Box};
-        glm::vec3 size{1.0f, 1.0f, 1.0f}; // half-extents (Box), size.x = radius (Sphere/Capsule)
+        ColliderShape shape{ ColliderShape::Box };
+        glm::vec3 size{ 1.0f, 1.0f, 1.0f };
     };
 }

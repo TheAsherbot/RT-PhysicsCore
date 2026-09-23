@@ -1,6 +1,7 @@
 ﻿# RT-PhysicsCore\CMakeLists.txt		
 
 add_subdirectory(src)
+add_subdirectory(tests/)
 
 add_library(glad external/glad/src/gl.c)
 target_include_directories(glad PUBLIC external/glad/include)

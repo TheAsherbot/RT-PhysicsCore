@@ -15,9 +15,10 @@ namespace RT_PhysicsCore
     glm::mat3 ComputeSphereInertia(float mass, float radius);
     glm::mat3 ComputeCylinderInertia(float mass, float radius, float height);   // axis = local +Y
 
-    // Cylinder of cylinderLength (straight section only) + two hemisphere
-    // caps of the given radius, axis = local +Y.
-    glm::mat3 ComputeCapsuleInertia(float mass, float radius, float cylinderLength);
+    // Cylinder (straight section, half-length = halfLength) + two hemisphere
+    // caps of the given radius, axis = local +Y. halfLength matches
+    // ColliderComponent's size.y convention - not the full cylinder length.
+    glm::mat3 ComputeCapsuleInertia(float mass, float radius, float halfLength);
 
     // invMass = 1/mass, invInertiaBody = inverse(inertiaBody). Falls back to
     // MakeStaticBody() (with a warning) if mass <= 0.

@@ -13,12 +13,21 @@
 - Basic Shader Compilation
 - Camera
 - Debug drawing
+- Rendering simple 3D objects
+- Rigid body motion
+- Euler + semi-implicit integration
 
 ## Challenges
-- 
+- Did not understand how to include glad. 
+- At first I did not understand how Eular integration worked, but after reading up on it I understand it now.
 
 ## Solutions / Decisions
-- 
+- Readup on glad and use an online generator to generate the glad files.
 
 ## Next Week
-- 
+- Rigid body motion
+- Euler + semi-implicit integration
+
+- collision detection
+- collision resolution
+- Friction + restitution

@@ -23,7 +23,7 @@ namespace RT_PhysicsCore
     {
         float rSq = radius * radius;
         float axial = 0.5f * mass * rSq;
-        float perp  = (mass / 12.0f) * (3.0f * rSq + height * height);
+        float perp = (mass / 12.0f) * (3.0f * rSq + height * height);
 
         glm::mat3 inertia(0.0f);
         inertia[0][0] = perp;
@@ -32,28 +32,28 @@ namespace RT_PhysicsCore
         return inertia;
     }
 
-    glm::mat3 ComputeCapsuleInertia(float mass, float radius, float cylinderLength)
+    glm::mat3 ComputeCapsuleInertia(float mass, float radius, float halfLength)
     {
         // Cylinder + two hemisphere caps, mass split by volume; hemisphere
         // terms shifted to the capsule's center via the parallel-axis
         // theorem (each hemisphere's own centroid sits 3R/8 from its flat face).
         const float R = radius;
-        const float H = cylinderLength;
+        const float H = 2.0f * halfLength; // formulas below use the full cylinder length
         const float rSq = R * R;
 
-        const float volumeCylinder      = rSq * H;
+        const float volumeCylinder = rSq * H;
         const float volumeOneHemisphere = (2.0f / 3.0f) * rSq * R;
-        const float volumeTotal         = volumeCylinder + 2.0f * volumeOneHemisphere;
+        const float volumeTotal = volumeCylinder + 2.0f * volumeOneHemisphere;
 
-        const float massCylinder      = mass * (volumeCylinder / volumeTotal);
+        const float massCylinder = mass * (volumeCylinder / volumeTotal);
         const float massOneHemisphere = mass * (volumeOneHemisphere / volumeTotal);
 
         const float axial = 0.5f * massCylinder * rSq
-                           + 2.0f * (0.4f * massOneHemisphere * rSq);
+            + 2.0f * (0.4f * massOneHemisphere * rSq);
 
-        const float perpCylinder    = (massCylinder / 12.0f) * (3.0f * rSq + H * H);
+        const float perpCylinder = (massCylinder / 12.0f) * (3.0f * rSq + H * H);
         const float perpHemispheres = 2.0f * massOneHemisphere
-                                     * (0.4f * rSq + 0.25f * H * H + 0.375f * H * R);
+            * (0.4f * rSq + 0.25f * H * H + 0.375f * H * R);
 
         glm::mat3 inertia(0.0f);
         inertia[0][0] = perpCylinder + perpHemispheres;
