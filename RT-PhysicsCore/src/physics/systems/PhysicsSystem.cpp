@@ -47,13 +47,15 @@ namespace RT_PhysicsCore
             // Angular - semi-implicit Euler. World-space inertia rebuilt from
             // the current orientation every step; see RigidBodyComponent.h
             // for why momentum (not angular velocity) is what's integrated.
+            // Cached on the component (not just local) - ResolutionSystem
+            // needs the same two values and shouldn't redo this multiply.
             glm::mat3 rotation = glm::mat3_cast(transform->rotation);
-            glm::mat3 invInertiaWorld = rotation * body->invInertiaBody * glm::transpose(rotation);
+            body->invInertiaWorld = rotation * body->invInertiaBody * glm::transpose(rotation);
 
             body->angularMomentum += body->torqueAccum * dtf;
-            glm::vec3 angularVelocity = invInertiaWorld * body->angularMomentum;
+            body->angularVelocity = body->invInertiaWorld * body->angularMomentum;
 
-            glm::quat omegaQuat(0.0f, angularVelocity.x, angularVelocity.y, angularVelocity.z);
+            glm::quat omegaQuat(0.0f, body->angularVelocity.x, body->angularVelocity.y, body->angularVelocity.z);
             glm::quat deltaRotation = 0.5f * dtf * (omegaQuat * transform->rotation);
             transform->rotation = glm::normalize(transform->rotation + deltaRotation);
 

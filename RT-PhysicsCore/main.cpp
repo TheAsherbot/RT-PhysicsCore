@@ -63,14 +63,14 @@ int main()
 	RT_PhysicsCore::Entity e = scene.CreateEntity();
 
 	RT_PhysicsCore::TransformComponent t;
-	t.position = { -2.0f, 60.0f, 0.0f };
+	t.position = { -2.0f, 30.0f, 0.0f };
 
 	// Unit sphere - radius matches TransformComponent's default scale of 1.
 	constexpr float sphereMass = 1.0f;
 	constexpr float sphereRadius = 1.0f;
 	RT_PhysicsCore::RigidBodyComponent rb = RT_PhysicsCore::MakeDynamicBody(
 		sphereMass, RT_PhysicsCore::ComputeSphereInertia(sphereMass, sphereRadius));
-	rb.velocity = { 0.5f, -9.81f, 0.0f };
+	rb.velocity = { 0.0f, 0.0f, 0.0f };
 
 	RT_PhysicsCore::MeshComponent mesh;
 	mesh.shape = RT_PhysicsCore::PrimitiveShape::Sphere;
@@ -85,6 +85,7 @@ int main()
 	scene.AddComponent(e, mesh);
 	scene.AddComponent(e, collider);
 
+	glm::quat rotZ15 = glm::angleAxis(glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	// Ground plane - static rigid body (infinite mass/inertia), so
 	// ResolutionSystem doesn't need to special-case "collider with no
 	// RigidBodyComponent" anywhere.
@@ -92,6 +93,7 @@ int main()
 	RT_PhysicsCore::TransformComponent groundTransform;
 	groundTransform.position = { 0.0f, 0.0f, 0.0f };
 	groundTransform.scale = { 50.0f, 1.0f, 50.0f };
+	groundTransform.rotation = rotZ15;
 
 	RT_PhysicsCore::RigidBodyComponent groundBody = RT_PhysicsCore::MakeStaticBody();
 

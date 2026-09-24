@@ -30,5 +30,12 @@ namespace RT_PhysicsCore
 
         glm::vec3 angularMomentum{ 0.0f, 0.0f, 0.0f };
         glm::vec3 torqueAccum{ 0.0f, 0.0f, 0.0f };   // cleared every FixedUpdate
+
+        // Cache, not fundamental state: PhysicsSystem recomputes both every
+        // FixedUpdate from angularMomentum and the current orientation.
+        // Static bodies never get touched (PhysicsSystem skips them), so
+        // these correctly stay zero for them by default.
+        glm::vec3 angularVelocity{ 0.0f, 0.0f, 0.0f };
+        glm::mat3 invInertiaWorld{ 0.0f };
     };
 }
