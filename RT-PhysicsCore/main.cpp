@@ -16,6 +16,7 @@
 #include "RT-PhysicsCore/physics/MassProperties.h"
 #include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
+#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
 
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
@@ -45,7 +46,17 @@ int main()
 	// Create systems
 	scene.AddSystem(std::make_unique<RT_PhysicsCore::TransformPropagationSystem>(scene));
 	scene.AddSystem(std::make_unique<RT_PhysicsCore::PhysicsSystem>(scene));
-	scene.AddSystem(std::make_unique<RT_PhysicsCore::CollisionSystem>(scene));
+
+	// CollisionSystem is owned by the scene once moved in, but the raw
+	// pointer grabbed beforehand stays valid - the unique_ptr moving
+	// doesn't relocate the CollisionSystem object itself, only the
+	// pointer bookkeeping. ResolutionSystem needs that reference to read
+	// this step's contacts, the same way RenderSystem needs Renderer&.
+	auto collisionSystem = std::make_unique<RT_PhysicsCore::CollisionSystem>(scene);
+	RT_PhysicsCore::CollisionSystem* collisionSystemPtr = collisionSystem.get();
+	scene.AddSystem(std::move(collisionSystem));
+	scene.AddSystem(std::make_unique<RT_PhysicsCore::ResolutionSystem>(scene, *collisionSystemPtr));
+
 	scene.AddSystem(std::make_unique<RT_PhysicsCore::RenderSystem>(scene, renderer));
 
 	// Create an entity
@@ -74,13 +85,16 @@ int main()
 	scene.AddComponent(e, mesh);
 	scene.AddComponent(e, collider);
 
-	// A visual-only ground plane - no RigidBodyComponent, so PhysicsSystem
-	// leaves it alone; it just sits there so falling objects have
-	// something to fall past.
+	// Ground plane - static rigid body (infinite mass/inertia), so
+	// ResolutionSystem doesn't need to special-case "collider with no
+	// RigidBodyComponent" anywhere.
 	RT_PhysicsCore::Entity ground = scene.CreateEntity();
 	RT_PhysicsCore::TransformComponent groundTransform;
 	groundTransform.position = { 0.0f, 0.0f, 0.0f };
 	groundTransform.scale = { 50.0f, 1.0f, 50.0f };
+
+	RT_PhysicsCore::RigidBodyComponent groundBody = RT_PhysicsCore::MakeStaticBody();
+
 	RT_PhysicsCore::MeshComponent groundMesh;
 	groundMesh.shape = RT_PhysicsCore::PrimitiveShape::Plane;
 	groundMesh.color = { 0.3f, 0.45f, 0.3f };
@@ -94,6 +108,7 @@ int main()
 	groundCollider.size = groundTransform.scale * 0.5f;
 
 	scene.AddComponent(ground, groundTransform);
+	scene.AddComponent(ground, groundBody);
 	scene.AddComponent(ground, groundMesh);
 	scene.AddComponent(ground, groundCollider);
 

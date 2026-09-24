@@ -23,8 +23,8 @@ namespace RT_PhysicsCore
         // Closest points between two 3D segments (Ericson, "Real-Time
         // Collision Detection" 5.1.9), handling degenerate/parallel cases.
         void ClosestPointsSegmentSegment(const glm::vec3& a0, const glm::vec3& a1,
-                                          const glm::vec3& b0, const glm::vec3& b1,
-                                          glm::vec3& outA, glm::vec3& outB)
+            const glm::vec3& b0, const glm::vec3& b1,
+            glm::vec3& outA, glm::vec3& outB)
         {
             glm::vec3 d1 = a1 - a0;
             glm::vec3 d2 = b1 - b0;
@@ -101,8 +101,8 @@ namespace RT_PhysicsCore
 
         // normal points sphere -> box.
         bool SphereBox(const glm::vec3& sphereCenter, float sphereRadius,
-                        const glm::vec3& boxPos, const glm::mat3& boxRot, const glm::vec3& boxHalf,
-                        Contact& out)
+            const glm::vec3& boxPos, const glm::mat3& boxRot, const glm::vec3& boxHalf,
+            Contact& out)
         {
             glm::vec3 d = sphereCenter - boxPos;
             glm::vec3 local(glm::dot(d, boxRot[0]), glm::dot(d, boxRot[1]), glm::dot(d, boxRot[2]));
@@ -147,16 +147,16 @@ namespace RT_PhysicsCore
         }
 
         bool SphereCapsule(const glm::vec3& sphereCenter, float sphereRadius,
-                            const glm::vec3& capA, const glm::vec3& capB, float capRadius,
-                            Contact& out)
+            const glm::vec3& capA, const glm::vec3& capB, float capRadius,
+            Contact& out)
         {
             glm::vec3 closest = ClosestPointOnSegment(sphereCenter, capA, capB);
             return SphereSphere(sphereCenter, sphereRadius, closest, capRadius, out);
         }
 
         bool CapsuleCapsule(const glm::vec3& aP0, const glm::vec3& aP1, float radiusA,
-                             const glm::vec3& bP0, const glm::vec3& bP1, float radiusB,
-                             Contact& out)
+            const glm::vec3& bP0, const glm::vec3& bP1, float radiusB,
+            Contact& out)
         {
             glm::vec3 dA = aP1 - aP0;
             glm::vec3 dB = bP1 - bP0;
@@ -217,8 +217,8 @@ namespace RT_PhysicsCore
         // box surface -> segment), which converges quickly for two convex
         // shapes.
         bool BoxCapsule(const glm::vec3& boxPos, const glm::mat3& boxRot, const glm::vec3& boxHalf,
-                         const glm::vec3& capA, const glm::vec3& capB, float capRadius,
-                         Contact& out)
+            const glm::vec3& capA, const glm::vec3& capB, float capRadius,
+            Contact& out)
         {
             glm::vec3 segPoint = ClosestPointOnSegment(boxPos, capA, capB);
             for (int iter = 0; iter < 2; ++iter)
@@ -236,8 +236,13 @@ namespace RT_PhysicsCore
 
             // If the capsule's axis lies roughly in the contact plane
             // (resting along the face, not just touching near one end),
-            // add a second point at the far end of the capsule instead of
-            // leaving a single point that lets it rock.
+            // replace the single point above - which converges to the
+            // AXIS MIDPOINT when the box sits symmetrically under the
+            // capsule, not either end - with two points at the ends of
+            // wherever the capsule's axis actually overlaps the box,
+            // projected along the axis direction (same idea as the
+            // capsule-capsule interval above, using the box's SAT-style
+            // projected half-width in place of a second capsule).
             glm::vec3 axisVec = capB - capA;
             float axisLen = glm::length(axisVec);
             if (axisLen > kEpsilon)
@@ -245,20 +250,35 @@ namespace RT_PhysicsCore
                 glm::vec3 axisDir = axisVec / axisLen;
                 if (std::abs(glm::dot(axisDir, out.normal)) < 0.2f)
                 {
-                    float tSeg = glm::dot(segPoint - capA, axisDir);
-                    glm::vec3 farPoint = capA + axisDir * ((tSeg < axisLen * 0.5f) ? axisLen : 0.0f);
+                    float boxProjHalfWidth = boxHalf.x * std::abs(glm::dot(axisDir, boxRot[0]))
+                        + boxHalf.y * std::abs(glm::dot(axisDir, boxRot[1]))
+                        + boxHalf.z * std::abs(glm::dot(axisDir, boxRot[2]));
+                    float boxCenterT = glm::dot(boxPos - capA, axisDir);
 
-                    glm::vec3 d = farPoint - boxPos;
-                    glm::vec3 local(glm::dot(d, boxRot[0]), glm::dot(d, boxRot[1]), glm::dot(d, boxRot[2]));
-                    glm::vec3 clampedLocal = glm::clamp(local, -boxHalf, boxHalf);
-                    glm::vec3 boxPoint = boxPos + boxRot[0] * clampedLocal.x + boxRot[1] * clampedLocal.y + boxRot[2] * clampedLocal.z;
+                    float tMin = glm::clamp(boxCenterT - boxProjHalfWidth, 0.0f, axisLen);
+                    float tMax = glm::clamp(boxCenterT + boxProjHalfWidth, 0.0f, axisLen);
 
-                    float dist = glm::length(farPoint - boxPoint);
-                    if (dist < capRadius)
+                    if (tMax - tMin > kEpsilon)
                     {
-                        out.points[1] = boxPoint;
-                        out.penetrations[1] = capRadius - dist;
-                        out.pointCount = 2;
+                        glm::vec3 samples[2] = { capA + axisDir * tMin, capA + axisDir * tMax };
+                        Contact points[2];
+                        int hits = 0;
+                        for (glm::vec3& sample : samples)
+                        {
+                            if (SphereBox(sample, capRadius, boxPos, boxRot, boxHalf, points[hits]))
+                                ++hits;
+                        }
+
+                        if (hits > 0)
+                        {
+                            out.pointCount = 0;
+                            for (int i = 0; i < hits; ++i)
+                            {
+                                out.points[out.pointCount] = points[i].points[0];
+                                out.penetrations[out.pointCount] = points[i].penetrations[0];
+                                ++out.pointCount;
+                            }
+                        }
                     }
                 }
             }
@@ -267,9 +287,9 @@ namespace RT_PhysicsCore
         }
 
         bool TestAxis(glm::vec3 axis, const glm::vec3& centerDelta,
-                      const glm::mat3& rotA, const glm::vec3& halfA,
-                      const glm::mat3& rotB, const glm::vec3& halfB,
-                      float& outOverlap, glm::vec3& outNormalizedAxis)
+            const glm::mat3& rotA, const glm::vec3& halfA,
+            const glm::mat3& rotB, const glm::vec3& halfB,
+            float& outOverlap, glm::vec3& outNormalizedAxis)
         {
             float lenSq = glm::dot(axis, axis);
             if (lenSq < kEpsilon * kEpsilon)
@@ -282,18 +302,18 @@ namespace RT_PhysicsCore
             outNormalizedAxis = axis;
 
             float rA = halfA.x * std::abs(glm::dot(axis, rotA[0]))
-                     + halfA.y * std::abs(glm::dot(axis, rotA[1]))
-                     + halfA.z * std::abs(glm::dot(axis, rotA[2]));
+                + halfA.y * std::abs(glm::dot(axis, rotA[1]))
+                + halfA.z * std::abs(glm::dot(axis, rotA[2]));
             float rB = halfB.x * std::abs(glm::dot(axis, rotB[0]))
-                     + halfB.y * std::abs(glm::dot(axis, rotB[1]))
-                     + halfB.z * std::abs(glm::dot(axis, rotB[2]));
+                + halfB.y * std::abs(glm::dot(axis, rotB[1]))
+                + halfB.z * std::abs(glm::dot(axis, rotB[2]));
 
             outOverlap = (rA + rB) - std::abs(glm::dot(centerDelta, axis));
             return outOverlap >= 0.0f;
         }
 
         int ClipPolygonAgainstPlane(const glm::vec3* inPoly, int inCount, glm::vec3* outPoly,
-                                     const glm::vec3& planeNormal, const glm::vec3& planePoint)
+            const glm::vec3& planeNormal, const glm::vec3& planePoint)
         {
             int outCount = 0;
             for (int i = 0; i < inCount; ++i)
@@ -322,8 +342,8 @@ namespace RT_PhysicsCore
         // face against the reference face's 4 side planes so a flat box-on-
         // box rest produces multiple contact points, not one.
         void GenerateFaceContact(const glm::vec3& posA, const glm::mat3& rotA, const glm::vec3& halfA,
-                                  const glm::vec3& posB, const glm::mat3& rotB, const glm::vec3& halfB,
-                                  int minAxisIndex, const glm::vec3& normalAtoB, Contact& out)
+            const glm::vec3& posB, const glm::mat3& rotB, const glm::vec3& halfB,
+            int minAxisIndex, const glm::vec3& normalAtoB, Contact& out)
         {
             bool refIsA = minAxisIndex < 3;
 
@@ -404,8 +424,8 @@ namespace RT_PhysicsCore
         // ones facing each other along the other two local axes) and take
         // their closest points.
         void GenerateEdgeContact(const glm::vec3& posA, const glm::mat3& rotA, const glm::vec3& halfA,
-                                  const glm::vec3& posB, const glm::mat3& rotB, const glm::vec3& halfB,
-                                  int axisA, int axisB, float penetration, Contact& out)
+            const glm::vec3& posB, const glm::mat3& rotB, const glm::vec3& halfB,
+            int axisA, int axisB, float penetration, Contact& out)
         {
             glm::vec3 centerDelta = posB - posA;
             glm::vec3 dLocalA(glm::dot(centerDelta, rotA[0]), glm::dot(centerDelta, rotA[1]), glm::dot(centerDelta, rotA[2]));
@@ -421,8 +441,8 @@ namespace RT_PhysicsCore
 
             glm::vec3 closestA, closestB;
             ClosestPointsSegmentSegment(baseA - rotA[axisA] * halfA[axisA], baseA + rotA[axisA] * halfA[axisA],
-                                         baseB - rotB[axisB] * halfB[axisB], baseB + rotB[axisB] * halfB[axisB],
-                                         closestA, closestB);
+                baseB - rotB[axisB] * halfB[axisB], baseB + rotB[axisB] * halfB[axisB],
+                closestA, closestB);
 
             out.points[0] = 0.5f * (closestA + closestB);
             out.penetrations[0] = penetration;
@@ -431,8 +451,8 @@ namespace RT_PhysicsCore
 
         // Exact 3D SAT: 6 face axes + 9 edge-edge cross-product axes.
         bool BoxVsBox(const glm::vec3& posA, const glm::mat3& rotA, const glm::vec3& halfA,
-                      const glm::vec3& posB, const glm::mat3& rotB, const glm::vec3& halfB,
-                      Contact& out)
+            const glm::vec3& posB, const glm::mat3& rotB, const glm::vec3& halfB,
+            Contact& out)
         {
             glm::vec3 centerDelta = posB - posA;
 
@@ -475,7 +495,7 @@ namespace RT_PhysicsCore
             else
             {
                 GenerateEdgeContact(posA, rotA, halfA, posB, rotB, halfB,
-                                     (minAxisIndex - 6) / 3, (minAxisIndex - 6) % 3, minOverlap, out);
+                    (minAxisIndex - 6) / 3, (minAxisIndex - 6) % 3, minOverlap, out);
             }
 
             return true;
