@@ -35,31 +35,23 @@ namespace RT_PhysicsCore
 
         void FixedUpdate(double dt) override;
 
-        void SetSolverMode(SolverMode mode) { solverMode = mode; }
-        SolverMode GetSolverMode() const { return solverMode; }
+        void SetSolverMode(SolverMode mode);
+        SolverMode GetSolverMode() const;
 
-        void SetIterationMode(IterationMode mode) { iterationMode = mode; }
-        IterationMode GetIterationMode() const { return iterationMode; }
+        void SetIterationMode(IterationMode mode);
+        IterationMode GetIterationMode() const;
 
-        void SetVelocityIterations(int iterations) { velocityIterations = iterations; }
-        void SetPositionIterations(int iterations) { positionIterations = iterations; }
+        void SetVelocityIterations(int iterations);
+        void SetPositionIterations(int iterations);
 
         // Only consulted in Adaptive mode.
-        void SetVelocityIterationBounds(int minIterations, int maxIterations)
-        {
-            minVelocityIterations = minIterations;
-            maxVelocityIterations = maxIterations;
-        }
-        void SetPositionIterationBounds(int minIterations, int maxIterations)
-        {
-            minPositionIterations = minIterations;
-            maxPositionIterations = maxIterations;
-        }
-        void SetVelocityTimeBudgetMs(float milliseconds) { velocityTimeBudgetMs = milliseconds; }
-        void SetPositionTimeBudgetMs(float milliseconds) { positionTimeBudgetMs = milliseconds; }
+        void SetVelocityIterationBounds(int minIterations, int maxIterations);
+        void SetPositionIterationBounds(int minIterations, int maxIterations);
+        void SetVelocityTimeBudgetMs(float milliseconds);
+        void SetPositionTimeBudgetMs(float milliseconds);
 
         // Only consulted in Exact mode. 0 = solver picks a size-based default.
-        void SetMaxLcpPivots(int pivots) { maxLcpPivots = pivots; }
+        void SetMaxLcpPivots(int pivots);
 
     private:
         void ResolveSequentialImpulses(const std::vector<Contact>& contacts);

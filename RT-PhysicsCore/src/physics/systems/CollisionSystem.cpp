@@ -23,6 +23,11 @@ namespace RT_PhysicsCore
         : ISystem(scene)
     {}
 
+    const std::vector<Contact>& CollisionSystem::GetContacts() const
+    {
+        return contacts;
+    }
+
     void CollisionSystem::FixedUpdate(double /*dt*/)
     {
         contacts.clear();

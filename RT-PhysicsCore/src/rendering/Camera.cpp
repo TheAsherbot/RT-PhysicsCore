@@ -50,11 +50,16 @@ namespace RT_PhysicsCore
         RT_LOG_INFO("Camera: switched to " << (mode == Mode::Orbit ? "Orbit" : "Free-fly") << " mode");
     }
 
+    Camera::Mode Camera::GetMode() const
+    {
+        return mode;
+    }
+
     void Camera::ProcessInput(Input& input, float deltaTime)
     {
         // Capture cursor while right mouse button is held down; release when not
         bool isLookButtonDown = input.IsMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
-		input.SetCursorCaptured(isLookButtonDown);
+        input.SetCursorCaptured(isLookButtonDown);
 
         // --- Mode toggle (Tab) using edge-triggered check from Input ---
         if (input.WasKeyPressed(GLFW_KEY_TAB))
@@ -108,7 +113,7 @@ namespace RT_PhysicsCore
         if (mode == Mode::Orbit)
         {
             position = orbitTarget - Front() * orbitDistance;
-			DebugDraw::Sphere(orbitTarget, 0.25f, glm::vec3(1.0f, 0.0f, 0.0f), 32, false); // small red sphere at camera position
+            DebugDraw::Sphere(orbitTarget, 0.25f, glm::vec3(1.0f, 0.0f, 0.0f), 32, false); // small red sphere at camera position
         }
     }
 

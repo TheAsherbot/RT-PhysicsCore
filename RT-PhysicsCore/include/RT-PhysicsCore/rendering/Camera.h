@@ -45,7 +45,7 @@ namespace RT_PhysicsCore
         void ProcessInput(Input& input, float deltaTime);
 
         void SetMode(Mode newMode);
-        Mode GetMode() const { return mode; }
+        Mode GetMode() const;
 
         glm::mat4 GetViewMatrix() const;
         glm::mat4 GetProjectionMatrix(float aspectRatio) const;

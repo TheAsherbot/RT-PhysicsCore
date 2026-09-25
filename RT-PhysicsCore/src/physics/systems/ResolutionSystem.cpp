@@ -91,6 +91,63 @@ namespace RT_PhysicsCore
         : ISystem(scene), collisionSystem(collisionSystem), solverMode(initialMode)
     {}
 
+    void ResolutionSystem::SetSolverMode(SolverMode mode)
+    {
+        solverMode = mode;
+    }
+
+    ResolutionSystem::SolverMode ResolutionSystem::GetSolverMode() const
+    {
+        return solverMode;
+    }
+
+    void ResolutionSystem::SetIterationMode(IterationMode mode)
+    {
+        iterationMode = mode;
+    }
+
+    ResolutionSystem::IterationMode ResolutionSystem::GetIterationMode() const
+    {
+        return iterationMode;
+    }
+
+    void ResolutionSystem::SetVelocityIterations(int iterations)
+    {
+        velocityIterations = iterations;
+    }
+
+    void ResolutionSystem::SetPositionIterations(int iterations)
+    {
+        positionIterations = iterations;
+    }
+
+    void ResolutionSystem::SetVelocityIterationBounds(int minIterations, int maxIterations)
+    {
+        minVelocityIterations = minIterations;
+        maxVelocityIterations = maxIterations;
+    }
+
+    void ResolutionSystem::SetPositionIterationBounds(int minIterations, int maxIterations)
+    {
+        minPositionIterations = minIterations;
+        maxPositionIterations = maxIterations;
+    }
+
+    void ResolutionSystem::SetVelocityTimeBudgetMs(float milliseconds)
+    {
+        velocityTimeBudgetMs = milliseconds;
+    }
+
+    void ResolutionSystem::SetPositionTimeBudgetMs(float milliseconds)
+    {
+        positionTimeBudgetMs = milliseconds;
+    }
+
+    void ResolutionSystem::SetMaxLcpPivots(int pivots)
+    {
+        maxLcpPivots = pivots;
+    }
+
     void ResolutionSystem::FixedUpdate(double /*dt*/)
     {
         const std::vector<Contact>& contacts = collisionSystem.GetContacts();
