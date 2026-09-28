@@ -16,9 +16,16 @@ namespace RT_PhysicsCore
         Entity a{};
         Entity b{};
 
-        glm::vec3 normal{0.0f, 1.0f, 0.0f};
+        glm::vec3 normal{ 0.0f, 1.0f, 0.0f };
         glm::vec3 points[kMaxContactPoints]{};
         float penetrations[kMaxContactPoints]{};
-        int pointCount{0};
+        int pointCount{ 0 };
+
+        // Combined pair values (see PhysicsMaterial.h) - computed once
+        // when CollisionSystem builds this contact, not re-derived by
+        // ResolutionSystem every iteration.
+        float restitution{ 0.0f };
+        float staticFriction{ 0.0f };
+        float kineticFriction{ 0.0f };
     };
 }

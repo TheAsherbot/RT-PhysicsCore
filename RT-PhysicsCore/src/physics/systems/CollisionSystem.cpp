@@ -2,8 +2,11 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
+#include "RT-PhysicsCore/physics/components/PhysicsMaterialComponent.h"
 #include "RT-PhysicsCore/physics/collision/AABB.h"
 #include "RT-PhysicsCore/physics/collision/NarrowPhase.h"
+#include "RT-PhysicsCore/physics/PhysicsMaterial.h"
+#include "RT-PhysicsCore/utils/Log.h"
 
 #include <glm/gtc/quaternion.hpp>
 
@@ -16,6 +19,7 @@ namespace RT_PhysicsCore
             Entity entity;
             AABB aabb;
             ColliderPose pose;
+            MaterialId material;
         };
     }
 
@@ -47,10 +51,14 @@ namespace RT_PhysicsCore
             ColliderPose pose;
             pose.shape = collider->shape;
             pose.size = collider->size;
-            pose.position = transform->position;
+            pose.position = transform->position + (transform->rotation * collider->offset);
+            RT_LOG_INFO("Collider Offset: " << (transform->rotation * collider->offset).y);
             pose.rotation = glm::mat3_cast(transform->rotation);
 
-            entries.push_back({ e, ComputeWorldAABB(*collider, transform->position, transform->rotation), pose });
+            auto* material = scene.GetComponent<PhysicsMaterialComponent>(e);
+            MaterialId materialId = material ? material->material : MaterialId::Default;
+
+            entries.push_back({ e, ComputeWorldAABB(*collider, transform->position, transform->rotation), pose, materialId });
         }
 
         // Naive O(n^2) broad phase - fine at current body counts. Swap in
@@ -69,6 +77,12 @@ namespace RT_PhysicsCore
                 {
                     contact.a = entries[i].entity;
                     contact.b = entries[j].entity;
+
+                    MaterialPairProperties mat = GetPairProperties(entries[i].material, entries[j].material);
+                    contact.restitution = mat.restitution;
+                    contact.staticFriction = mat.staticFriction;
+                    contact.kineticFriction = mat.kineticFriction;
+
                     contacts.push_back(contact);
                 }
             }

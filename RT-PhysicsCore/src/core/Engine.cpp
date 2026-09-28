@@ -2,6 +2,9 @@
 #include "utils/FixedTimestep.h"
 #include "RT-PhysicsCore/utils/Log.h"
 
+#include <chrono>
+
+
 namespace RT_PhysicsCore
 {
     Engine::Engine(double physicsHz)
@@ -46,8 +49,17 @@ namespace RT_PhysicsCore
 
             for (std::uint32_t i = 0; i < steps; i++)
             {
+                auto stepStart = std::chrono::high_resolution_clock::now();
+
                 if (fixedUpdateCallback)
                     fixedUpdateCallback(fixedDeltaTime);
+
+                auto stepEnd = std::chrono::high_resolution_clock::now();
+
+                double stepMicros =
+                    std::chrono::duration<double, std::micro>(stepEnd - stepStart).count();
+
+                RT_LOG_INFO("Fixed step " << i << " took " << stepMicros << " us");
             }
 
             // Normal update must run before render: RenderSystem reads

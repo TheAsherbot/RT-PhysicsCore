@@ -1,5 +1,8 @@
 #include "RT-PhysicsCore/physics/collision/AABB.h"
 
+
+#include "RT-PhysicsCore/utils/Log.h"
+
 namespace RT_PhysicsCore
 {
     namespace
@@ -32,6 +35,9 @@ namespace RT_PhysicsCore
     AABB ComputeWorldAABB(const ColliderComponent& collider, const glm::vec3& position, const glm::quat& rotation)
     {
         glm::mat3 r = glm::mat3_cast(rotation);
+        glm::vec3 center = position + r * collider.offset;
+        RT_LOG_INFO("Collider stuff: " << (collider.offset * rotation).y);
+        RT_LOG_INFO("center: " << center.y);
 
         switch (collider.shape)
         {

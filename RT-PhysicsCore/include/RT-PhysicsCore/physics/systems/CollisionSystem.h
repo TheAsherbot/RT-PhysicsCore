@@ -15,7 +15,7 @@ namespace RT_PhysicsCore
 
         // Valid for the rest of this fixed step, until the next FixedUpdate
         // rebuilds it. A future resolution system reads this.
-        const std::vector<Contact>& GetContacts() const { return contacts; }
+        const std::vector<Contact>& GetContacts() const;
 
     private:
         std::vector<Contact> contacts;
