@@ -130,11 +130,11 @@ void main()
             std::vector<MeshVertex> v;
             glm::vec3 n(0.0f, 1.0f, 0.0f);
             v.push_back({ {-0.5f, 0.0f, -0.5f}, n });
+            v.push_back({ { 0.5f, 0.0f,  0.5f}, n });
             v.push_back({ { 0.5f, 0.0f, -0.5f}, n });
-            v.push_back({ { 0.5f, 0.0f,  0.5f}, n });
             v.push_back({ {-0.5f, 0.0f, -0.5f}, n });
-            v.push_back({ { 0.5f, 0.0f,  0.5f}, n });
             v.push_back({ {-0.5f, 0.0f,  0.5f}, n });
+            v.push_back({ { 0.5f, 0.0f,  0.5f}, n });
             return v;
         }
 
