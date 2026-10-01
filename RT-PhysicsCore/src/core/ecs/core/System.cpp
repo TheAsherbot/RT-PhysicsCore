@@ -1,3 +1,8 @@
+/**
+ * @file System.cpp
+ * @brief Default empty implementations for ISystem lifecycle hooks.
+ */
+
 #include "RT-PhysicsCore/core/ecs/core/System.h"
 
 namespace RT_PhysicsCore
@@ -8,7 +13,12 @@ namespace RT_PhysicsCore
 
     ISystem::~ISystem() = default;
 
-    void ISystem::Update() {}
-    void ISystem::FixedUpdate(double /*dt*/) {}
-    void ISystem::RenderUpdate() {}
+    void ISystem::Update()
+    {}
+
+    void ISystem::FixedUpdate(double /*dt*/)
+    {}
+
+    void ISystem::RenderUpdate()
+    {}
 }

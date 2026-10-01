@@ -1,15 +1,18 @@
-#include "RT-PhysicsCore/core/ecs/core/Scene.h"
-#include "RT-PhysicsCore/core/ecs/core/System.h" // Scene::~Scene() needs ISystem to be a complete type
-#include <algorithm>
+/**
+ * @file Scene.cpp
+ * @brief Implementation of Scene entity lifecycles, system execution, and hierarchy repairs.
+ */
 
+#include "RT-PhysicsCore/core/ecs/core/Scene.h"
+#include "RT-PhysicsCore/core/ecs/core/System.h"
 #include "RT-PhysicsCore/core/ecs/components/HierarchyComponent.h"
+#include <algorithm>
 
 namespace RT_PhysicsCore
 {
     // Defined here rather than defaulted in the header so that
-    // std::vector<std::unique_ptr<ISystem>>'s destruction doesn't depend on
-    // include order in whichever .cpp happens to instantiate it - System.h
-    // is guaranteed visible right above.
+    // std::vector<std::unique_ptr<ISystem>>'s destruction does not depend on
+    // include order in translation units that instantiate Scene.
     Scene::~Scene() = default;
 
     Entity Scene::CreateEntity()
@@ -78,19 +81,25 @@ namespace RT_PhysicsCore
     void Scene::UpdateSystems()
     {
         for (auto& system : systems)
+        {
             system->Update();
+        }
     }
 
     void Scene::FixedUpdateSystems()
     {
         for (auto& system : systems)
+        {
             system->FixedUpdate(fixedDeltaTime);
+        }
     }
 
     void Scene::RenderUpdateSystems()
     {
         for (auto& system : systems)
+        {
             system->RenderUpdate();
+        }
     }
 
     void Scene::SetParent(Entity child, Entity parent)
@@ -126,8 +135,6 @@ namespace RT_PhysicsCore
 
     void Scene::RemoveAllComponents(Entity entity)
     {
-        // Every storage implements IComponentStorage::Remove(), so this
-        // doesn't need to know T for each component type.
         for (auto& [type, storage] : storagesRaw)
         {
             storage->Remove(entity);
@@ -138,7 +145,9 @@ namespace RT_PhysicsCore
     {
         auto* hierarchy = GetComponent<HierarchyComponent>(entity);
         if (!hierarchy)
+        {
             return;
+        }
 
         if (hierarchy->parent != invalidEntity)
         {
@@ -147,8 +156,8 @@ namespace RT_PhysicsCore
             {
                 parentHierarchy->children.erase(
                     std::remove(parentHierarchy->children.begin(),
-                                parentHierarchy->children.end(),
-                                entity),
+                        parentHierarchy->children.end(),
+                        entity),
                     parentHierarchy->children.end()
                 );
             }
@@ -158,7 +167,9 @@ namespace RT_PhysicsCore
         {
             auto* childHierarchy = GetComponent<HierarchyComponent>(child);
             if (childHierarchy)
+            {
                 childHierarchy->parent = invalidEntity;
+            }
         }
     }
 }

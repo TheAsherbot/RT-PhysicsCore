@@ -1,3 +1,11 @@
+/**
+ * @file ComponentStorage.h
+ * @brief Contiguous sparse-set component storage template for the ECS.
+ *
+ * Implements a packed array mapped by an entity-to-index lookup table for O(1)
+ * insertion, lookup, and swap-and-pop removal.
+ */
+
 #pragma once
 
 #include <vector>
@@ -7,19 +15,59 @@
 
 namespace RT_PhysicsCore
 {
+    /**
+     * @class ComponentStorage
+     * @brief Strongly-typed contiguous storage container for component type T.
+     * @tparam T The component data type stored in this pool.
+     */
     template<typename T>
     class ComponentStorage : public IComponentStorage
     {
     public:
+        /**
+         * @brief Checks whether the given entity owns an instance of component T.
+         * @param entity The entity handle to inspect.
+         * @return True if the entity has this component, false otherwise.
+         */
         bool Has(Entity entity) const override;
 
+        /**
+         * @brief Retrieves a pointer to the entity's component for modification.
+         * @param entity The target entity handle.
+         * @return Pointer to the component if found; nullptr otherwise.
+         */
         T* Get(Entity entity);
+
+        /**
+         * @brief Retrieves a const pointer to the entity's component for read-only access.
+         * @param entity The target entity handle.
+         * @return Const pointer to the component if found; nullptr otherwise.
+         */
         const T* Get(Entity entity) const;
 
+        /**
+         * @brief Adds or replaces an instance of component T for the specified entity.
+         * @param entity The entity handle to associate with the component.
+         * @param component The component data to store.
+         */
         void Add(Entity entity, const T& component);
+
+        /**
+         * @brief Removes the component for the given entity using swap-and-pop.
+         * @param entity The entity handle whose component should be removed.
+         */
         void Remove(Entity entity) override;
 
+        /**
+         * @brief Provides direct read-only access to the contiguous array of components.
+         * @return Const reference to the packed component vector.
+         */
         const std::vector<T>& GetComponents() const;
+
+        /**
+         * @brief Provides direct read-only access to the dense array of corresponding entity IDs.
+         * @return Const reference to the entity vector matched 1:1 with GetComponents().
+         */
         const std::vector<Entity>& GetEntities() const;
 
     private:
@@ -29,11 +77,8 @@ namespace RT_PhysicsCore
     };
 
     // --- Template definitions ---
-    // Have to live here rather than in a .cpp: a template's definition must
-    // be visible in every translation unit that instantiates it for a given
-    // T, and ComponentStorage is instantiated once per component type, from
-    // wherever in the engine that type gets added to a Scene. A .cpp here
-    // could only ever satisfy calls made from within that one .cpp.
+    // Must live in the header: a template definition must be visible in every
+    // translation unit that instantiates it for a given T.
 
     template<typename T>
     bool ComponentStorage<T>::Has(Entity entity) const
@@ -46,7 +91,9 @@ namespace RT_PhysicsCore
     {
         auto it = entityToIndex.find(entity);
         if (it == entityToIndex.end())
+        {
             return nullptr;
+        }
         return &components[it->second];
     }
 
@@ -55,7 +102,9 @@ namespace RT_PhysicsCore
     {
         auto it = entityToIndex.find(entity);
         if (it == entityToIndex.end())
+        {
             return nullptr;
+        }
         return &components[it->second];
     }
 
@@ -80,7 +129,9 @@ namespace RT_PhysicsCore
     {
         auto it = entityToIndex.find(entity);
         if (it == entityToIndex.end())
+        {
             return;
+        }
 
         std::size_t index = it->second;
         std::size_t lastIndex = components.size() - 1;

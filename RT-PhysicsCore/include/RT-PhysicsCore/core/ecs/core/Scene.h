@@ -1,3 +1,10 @@
+/**
+ * @file Scene.h
+ * @brief Central ECS world context managing entities, component pools, and systems.
+ *
+ * Coordinates entity lifecycle allocation, component queries, and system dispatching.
+ */
+
 #pragma once
 
 #include <vector>
@@ -14,69 +21,158 @@ namespace RT_PhysicsCore
 {
     class ISystem;
 
+    /**
+     * @class Scene
+     * @brief The ECS world container owning all entities, components, and systems.
+     */
     class Scene
     {
     public:
+        /**
+         * @brief Constructs an empty scene with no entities or systems.
+         */
         Scene() = default;
 
-        // Declared here, defined in Scene.cpp *after* System.h is included -
-        // see the comment above the definition for why.
+        /**
+         * @brief Destructor. Defined out-of-line in Scene.cpp to allow forward declaration of ISystem.
+         */
         ~Scene();
 
-        // Entity management - defined in Scene.cpp
+        /**
+         * @brief Creates a new unique Entity in the scene, recycling dead IDs when available.
+         * @return The newly assigned Entity handle.
+         */
         Entity CreateEntity();
+
+        /**
+         * @brief Destroys an entity, removes all its components, and updates hierarchy links.
+         * @param entity The entity handle to destroy.
+         */
         void DestroyEntity(Entity entity);
+
+        /**
+         * @brief Retrieves the list of all currently active entities.
+         * @return Const reference to the active entity vector.
+         */
         const std::vector<Entity>& GetEntities() const;
 
-        // Component API - templates, defined below in this same header
+        /**
+         * @brief Checks if an entity possesses a component of type T.
+         * @tparam T The component type to check.
+         * @param entity The entity handle to inspect.
+         * @return True if the component exists on the entity, false otherwise.
+         */
         template<typename T>
         bool HasComponent(Entity entity) const;
 
+        /**
+         * @brief Retrieves a mutable pointer to an entity's component of type T.
+         * @tparam T The component type to retrieve.
+         * @param entity The entity handle.
+         * @return Pointer to the component if found; nullptr otherwise.
+         */
         template<typename T>
         T* GetComponent(Entity entity);
 
+        /**
+         * @brief Retrieves a read-only const pointer to an entity's component of type T.
+         * @tparam T The component type to retrieve.
+         * @param entity The entity handle.
+         * @return Const pointer to the component if found; nullptr otherwise.
+         */
         template<typename T>
         const T* GetComponent(Entity entity) const;
 
+        /**
+         * @brief Adds or replaces a component of type T on an entity.
+         * @tparam T The component type.
+         * @param entity The entity handle.
+         * @param component The component instance to assign.
+         */
         template<typename T>
         void AddComponent(Entity entity, const T& component);
 
+        /**
+         * @brief Removes a component of type T from an entity if present.
+         * @tparam T The component type to remove.
+         * @param entity The entity handle.
+         */
         template<typename T>
         void RemoveComponent(Entity entity);
 
-        // Query: entities that have all requested components - template, below
+        /**
+         * @brief Queries all entities possessing all requested component types.
+         * @note Iteration order is driven by the FIRST type specified in Ts...
+         *       For optimal performance, specify the rarest component type first.
+         * @tparam Ts List of component types that matching entities must have.
+         * @return Vector of entities matching all component requirements.
+         */
         template<typename... Ts>
         std::vector<Entity> Query() const;
 
-        // Systems - defined in Scene.cpp
+        /**
+         * @brief Adds and transfers ownership of an ISystem to the scene.
+         * @param system Unique pointer to the system instance.
+         */
         void AddSystem(std::unique_ptr<ISystem> system);
 
-        // Timing - defined in Scene.cpp
+        /**
+         * @brief Sets the current frame delta time in seconds.
+         * @param dt Frame delta time in seconds.
+         */
         void SetDeltaTime(double dt);
+
+        /**
+         * @brief Sets the fixed physics delta time in seconds.
+         * @param dt Fixed delta time in seconds.
+         */
         void SetFixedDeltaTime(double dt);
+
+        /**
+         * @brief Gets the current frame delta time in seconds.
+         * @return Frame delta time in seconds.
+         */
         double GetDeltaTime() const;
+
+        /**
+         * @brief Gets the fixed physics delta time in seconds.
+         * @return Fixed physics delta time in seconds.
+         */
         double GetFixedDeltaTime() const;
 
-        // System update entry points - defined in Scene.cpp
+        /**
+         * @brief Executes the Update() hook across all registered systems.
+         */
         void UpdateSystems();
+
+        /**
+         * @brief Executes the FixedUpdate() hook across all registered systems.
+         */
         void FixedUpdateSystems();
+
+        /**
+         * @brief Executes the RenderUpdate() hook across all registered systems.
+         */
         void RenderUpdateSystems();
 
-        // Hierarchy helpers - defined in Scene.cpp
+        /**
+         * @brief Sets or updates the parent-child relationship between two entities.
+         * @param child The child entity handle.
+         * @param parent The parent entity handle (or invalidEntity to detach).
+         */
         void SetParent(Entity child, Entity parent);
 
     private:
-        Entity nextEntity{1};
+        Entity nextEntity{ 1 };
         std::vector<Entity> entities;
         std::vector<Entity> freeEntities;
 
-        double deltaTime{0.0};
-        double fixedDeltaTime{0.0};
+        double deltaTime{ 0.0 };
+        double fixedDeltaTime{ 0.0 };
 
         std::unordered_map<std::type_index, std::unique_ptr<IComponentStorage>> storagesRaw;
         std::vector<std::unique_ptr<ISystem>> systems;
 
-        // Private helpers - templates, defined below in this same header
         template<typename T>
         ComponentStorage<T>* GetStorage();
 
@@ -86,26 +182,20 @@ namespace RT_PhysicsCore
         template<typename T>
         ComponentStorage<T>* GetOrCreateStorage();
 
-        // Defined in Scene.cpp (not templated)
         void RemoveAllComponents(Entity entity);
         void UpdateHierarchyOnDestroy(Entity entity);
     };
 
     // --- Template definitions ---
-    // Have to live here rather than in Scene.cpp: a template's definition
-    // must be visible in every translation unit that instantiates it for a
-    // given T, and Scene is deliberately generic over arbitrary
-    // component types added from anywhere in the engine. If these bodies
-    // lived in Scene.cpp, only Scene.cpp itself could instantiate them; any
-    // other .cpp calling scene.AddComponent<Foo>() would compile but fail
-    // to link.
 
     template<typename T>
     bool Scene::HasComponent(Entity entity) const
     {
         const auto* storage = GetStorageConst<T>();
         if (!storage)
+        {
             return false;
+        }
         return storage->Has(entity);
     }
 
@@ -114,7 +204,9 @@ namespace RT_PhysicsCore
     {
         auto* storage = GetStorage<T>();
         if (!storage)
+        {
             return nullptr;
+        }
         return storage->Get(entity);
     }
 
@@ -123,7 +215,9 @@ namespace RT_PhysicsCore
     {
         const auto* storage = GetStorageConst<T>();
         if (!storage)
+        {
             return nullptr;
+        }
         return storage->Get(entity);
     }
 
@@ -139,7 +233,9 @@ namespace RT_PhysicsCore
     {
         auto* storage = GetStorage<T>();
         if (!storage)
+        {
             return;
+        }
         storage->Remove(entity);
     }
 
@@ -149,17 +245,23 @@ namespace RT_PhysicsCore
         std::vector<Entity> result;
 
         if constexpr (sizeof...(Ts) == 0)
+        {
             return result;
+        }
 
         const auto* firstStorage = GetStorageConst<std::tuple_element_t<0, std::tuple<Ts...>>>();
         if (!firstStorage)
+        {
             return result;
+        }
 
         const auto& baseEntities = firstStorage->GetEntities();
         for (Entity e : baseEntities)
         {
             if ((HasComponent<Ts>(e) && ...))
+            {
                 result.push_back(e);
+            }
         }
 
         return result;
@@ -171,7 +273,9 @@ namespace RT_PhysicsCore
         std::type_index type = std::type_index(typeid(T));
         auto it = storagesRaw.find(type);
         if (it == storagesRaw.end())
+        {
             return nullptr;
+        }
         return static_cast<ComponentStorage<T>*>(it->second.get());
     }
 
@@ -181,7 +285,9 @@ namespace RT_PhysicsCore
         std::type_index type = std::type_index(typeid(T));
         auto it = storagesRaw.find(type);
         if (it == storagesRaw.end())
+        {
             return nullptr;
+        }
         return static_cast<const ComponentStorage<T>*>(it->second.get());
     }
 

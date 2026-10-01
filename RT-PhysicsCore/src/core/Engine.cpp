@@ -1,9 +1,13 @@
+/**
+ * @file Engine.cpp
+ * @brief Implementation of the main Engine coordinator and execution loop.
+ */
+
 #include "RT-PhysicsCore/core/Engine.h"
 #include "utils/FixedTimestep.h"
 #include "RT-PhysicsCore/utils/Log.h"
 
 #include <chrono>
-
 
 namespace RT_PhysicsCore
 {
@@ -13,17 +17,20 @@ namespace RT_PhysicsCore
         RT_LOG_INFO("Engine constructed at " << physicsHz << " Hz");
     }
 
-    Engine::~Engine() = default;
+    Engine::~Engine()
+    {
+        delete fixedTimestep;
+    }
 
     void Engine::SetFixedUpdateCallback(FixedUpdateCallback fixedUpdateCallBack)
     {
         this->fixedUpdateCallback = std::move(fixedUpdateCallBack);
     }
 
-	void Engine::SetUpdateCallback(UpdateCallback updateCallBack)
-	{
-		this->updateCallback = std::move(updateCallBack);
-	}
+    void Engine::SetUpdateCallback(UpdateCallback updateCallBack)
+    {
+        this->updateCallback = std::move(updateCallBack);
+    }
 
     void Engine::SetRenderCallback(RenderCallback renderCallBack)
     {
@@ -35,7 +42,6 @@ namespace RT_PhysicsCore
         RT_LOG_INFO("Exit requested");
         isRunning = false;
     }
-
 
     void Engine::Run()
     {
@@ -52,7 +58,9 @@ namespace RT_PhysicsCore
                 auto stepStart = std::chrono::high_resolution_clock::now();
 
                 if (fixedUpdateCallback)
+                {
                     fixedUpdateCallback(fixedDeltaTime);
+                }
 
                 auto stepEnd = std::chrono::high_resolution_clock::now();
 
@@ -66,11 +74,15 @@ namespace RT_PhysicsCore
             // WorldTransformComponent, which TransformPropagationSystem
             // recomputes during the normal update callback.
             if (updateCallback)
+            {
                 updateCallback(deltaTime);
+            }
 
             double alpha = fixedTimestep->Alpha();
             if (renderCallback)
+            {
                 renderCallback(alpha);
+            }
         }
 
         RT_LOG_INFO("Engine loop stopped");

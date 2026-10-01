@@ -1,3 +1,8 @@
+/**
+ * @file TransformPropagationSystem.cpp
+ * @brief Implementation of recursive world transform hierarchy propagation.
+ */
+
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
@@ -18,21 +23,23 @@ namespace RT_PhysicsCore
             if (!hierarchy || hierarchy->parent == invalidEntity)
             {
                 Propagate(e,
-                          glm::vec3(0.0f),
-                          glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
-                          glm::vec3(1.0f));
+                    glm::vec3(0.0f),
+                    glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
+                    glm::vec3(1.0f));
             }
         }
     }
 
     void TransformPropagationSystem::Propagate(Entity entity,
-                                                const glm::vec3& parentWorldPos,
-                                                const glm::quat& parentWorldRot,
-                                                const glm::vec3& parentWorldScale)
+        const glm::vec3& parentWorldPos,
+        const glm::quat& parentWorldRot,
+        const glm::vec3& parentWorldScale)
     {
         auto* local = scene.GetComponent<TransformComponent>(entity);
         if (!local)
+        {
             return;
+        }
 
         // worldTransform(child) = worldTransform(parent) * localTransform(child)
         glm::vec3 worldPos = parentWorldPos + parentWorldRot * (parentWorldScale * local->position);
@@ -47,7 +54,9 @@ namespace RT_PhysicsCore
 
         auto* hierarchy = scene.GetComponent<HierarchyComponent>(entity);
         if (!hierarchy)
+        {
             return;
+        }
 
         for (Entity child : hierarchy->children)
         {

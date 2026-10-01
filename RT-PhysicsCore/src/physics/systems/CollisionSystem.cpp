@@ -51,7 +51,6 @@ namespace RT_PhysicsCore
             pose.shape = collider->shape;
             pose.size = collider->size;
             pose.position = transform->position + (transform->rotation * collider->offset);
-            RT_LOG_INFO("Collider Offset: " << (transform->rotation * collider->offset).y);
             pose.rotation = glm::mat3_cast(transform->rotation);
 
             auto* material = scene.GetComponent<PhysicsMaterialComponent>(e);
