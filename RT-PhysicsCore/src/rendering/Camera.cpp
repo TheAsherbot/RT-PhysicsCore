@@ -1,3 +1,8 @@
+/**
+ * @file Camera.cpp
+ * @brief Implementation of camera view/projection mathematics and input handling.
+ */
+
 #include "RT-PhysicsCore/rendering/Camera.h"
 #include "RT-PhysicsCore/utils/Log.h"
 #include "RT-PhysicsCore/utils/DebugDraw.h"
@@ -10,7 +15,8 @@
 
 namespace RT_PhysicsCore
 {
-    Camera::Camera(glm::vec3 startPosition) : position(startPosition)
+    Camera::Camera(glm::vec3 startPosition)
+        : position(startPosition)
     {}
 
     glm::vec3 Camera::Front() const
@@ -94,7 +100,6 @@ namespace RT_PhysicsCore
             if (input.IsKeyDown(GLFW_KEY_LEFT_CONTROL)) orbitTarget -= glm::vec3(0.0f, 1.0f, 0.0f) * velocity;
 
             orbitDistance -= static_cast<float>(scrollThisFrame) * zoomSpeed;
-
             orbitDistance = std::clamp(orbitDistance, minOrbitDistance, maxOrbitDistance);
         }
 
@@ -102,7 +107,7 @@ namespace RT_PhysicsCore
         if (input.IsCursorCaptured())
         {
             double deltaX = input.MouseDeltaX();
-            // Input class delivers raw screen delta where downward is positive; invert for pitch look-up
+            // Input delivers screen delta where downward is positive; invert for pitch
             double deltaY = -input.MouseDeltaY();
 
             yawDegrees += static_cast<float>(deltaX) * mouseSensitivity;
@@ -113,7 +118,7 @@ namespace RT_PhysicsCore
         if (mode == Mode::Orbit)
         {
             position = orbitTarget - Front() * orbitDistance;
-            DebugDraw::Sphere(orbitTarget, 0.25f, glm::vec3(1.0f, 0.0f, 0.0f), 32, false); // small red sphere at camera position
+            DebugDraw::Sphere(orbitTarget, 0.25f, glm::vec3(1.0f, 0.0f, 0.0f), 32, false);
         }
     }
 

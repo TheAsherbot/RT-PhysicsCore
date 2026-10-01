@@ -1,3 +1,11 @@
+/**
+ * @file Renderer.h
+ * @brief OpenGL 3.3 Core rendering backend managing windowing, shaders, and draw passes.
+ *
+ * Encapsulates all direct graphics API calls and third-party OpenGL headers behind a Pimpl
+ * boundary, decoupling the rest of the engine from GLAD and GLFW.
+ */
+
 #pragma once
 
 #include <memory>
@@ -9,52 +17,85 @@ namespace RT_PhysicsCore
     struct MeshComponent;
     struct WorldTransformComponent;
 
-    // Owns the window, GL context, compiled shaders, and primitive
-    // geometry. The only class in the project that touches raw OpenGL -
-    // everything else (RenderSystem, MeshComponent) stays graphics-API-
-    // agnostic. Deliberately not an interface: there's exactly one backend
-    // and no near-term plan for a second, so a virtual IRenderer would just
-    // be indirection over a hypothetical.
-    //
-    // Pimpl'd on purpose, not just out of habit: it keeps <glad/gl.h> and
-    // <GLFW/glfw3.h> confined to Renderer.cpp. Anything that only needs to
-    // hold a Renderer& (like RenderSystem) doesn't drag platform/graphics
-    // headers into its own compile.
+    /**
+     * @class Renderer
+     * @brief Manages the GLFW window context, primitive meshes, shaders, and frame presentation.
+     */
     class Renderer
     {
     public:
+        /**
+         * @brief Initializes the GLFW window, loads OpenGL 3.3 function pointers, and compiles shaders.
+         * @param width Viewport width in pixels.
+         * @param height Viewport height in pixels.
+         * @param title Window caption string.
+         */
         Renderer(int width, int height, const char* title);
+
+        /**
+         * @brief Destructor. Destroys GL resources, programs, and terminates GLFW.
+         */
         ~Renderer();
 
         Renderer(const Renderer&) = delete;
         Renderer& operator=(const Renderer&) = delete;
 
-        // False if window/context/shader setup failed (already logged via
-        // RT_LOG_FATAL when it happens) - check this before calling Run().
+        /**
+         * @brief Checks if the window and OpenGL context initialized successfully.
+         * @return True if operational; false if window creation or shader compile failed.
+         */
         bool IsValid() const;
 
+        /**
+         * @brief Checks if the GLFW window has received an exit request.
+         * @return True if the window should close.
+         */
         bool ShouldClose() const;
 
-        // Polls window/input events, advances Input and the camera, clears
-        // the screen.
+        /**
+         * @brief Polls events, updates camera/input, clears color and depth buffers.
+         */
         void BeginFrame();
 
-        // Draws one entity's mesh using the current camera. No-op if
-        // !IsValid().
+        /**
+         * @brief Renders a single entity mesh transformed into world space.
+         * @param mesh The visual shape and color descriptor.
+         * @param worldTransform Global world position, rotation, and scale.
+         */
         void DrawMesh(const MeshComponent& mesh, const WorldTransformComponent& worldTransform);
 
-        // Drains DebugDraw's buffer for this frame and draws it as lines.
+        /**
+         * @brief Drains the DebugDraw line queue and submits line segments to the GPU.
+         */
         void FlushDebugDraw();
 
-        // Presents the frame (swaps buffers).
+        /**
+         * @brief Swaps the OpenGL front and back buffers to present the frame.
+         */
         void EndFrame();
 
+        /**
+         * @brief Provides mutable access to the active scene Camera.
+         * @return Reference to Camera.
+         */
         Camera& GetCamera();
+
+        /**
+         * @brief Provides read-only access to the active scene Camera.
+         * @return Const reference to Camera.
+         */
         const Camera& GetCamera() const;
 
-        // Keyboard/mouse state for this window - safe to query from
-        // anywhere (main.cpp, other systems), not just Camera.
+        /**
+         * @brief Provides access to the window Input subsystem.
+         * @return Reference to Input.
+         */
         Input& GetInput();
+
+        /**
+         * @brief Provides read-only access to the window Input subsystem.
+         * @return Const reference to Input.
+         */
         const Input& GetInput() const;
 
     private:

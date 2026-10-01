@@ -1,26 +1,39 @@
+/**
+ * @file MeshComponent.h
+ * @brief Visual mesh primitive representation and rendering properties.
+ *
+ * Defines the geometric appearance and base surface color of an entity.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>
 
 namespace RT_PhysicsCore
 {
-    // Deliberately its own enum, not ColliderShape: what an entity looks
-    // like and what it collides as are different concerns. They happen to
-    // overlap today (Box/Sphere) but shouldn't be coupled - a visual-only
-    // "Plane" ground mesh has no physical equivalent here, and a future
-    // physics-only convex hull collider wouldn't need a matching visual.
+    /**
+     * @enum PrimitiveShape
+     * @brief Visual primitive shapes supported by the built-in Renderer.
+     *
+     * Kept separate from ColliderShape to avoid coupling rendering representation
+     * with physical collision volumes (e.g., visual-only ground planes).
+     */
     enum class PrimitiveShape
     {
-        Cube,
-        Sphere,
-        Plane
+        Cube,   ///< Unit cube centered at origin.
+        Sphere, ///< UV sphere centered at origin.
+        Plane   ///< Unit quad on the XZ plane facing +Y.
     };
 
+    /**
+     * @struct MeshComponent
+     * @brief Visual mesh descriptor attached to renderable entities.
+     *
+     * Dimensions and extents are driven directly by TransformComponent::scale.
+     */
     struct MeshComponent
     {
-        PrimitiveShape shape{PrimitiveShape::Cube};
-        glm::vec3 color{1.0f, 1.0f, 1.0f};
-        // Sizing comes from TransformComponent::scale, not a separate field
-        // here - one source of truth for "how big is this entity."
+        PrimitiveShape shape{ PrimitiveShape::Cube }; ///< The geometric primitive to draw.
+        glm::vec3 color{ 1.0f, 1.0f, 1.0f };          ///< Diffuse surface color multiplier (RGB).
     };
 }

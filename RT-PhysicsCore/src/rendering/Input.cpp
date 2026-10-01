@@ -1,3 +1,8 @@
+/**
+ * @file Input.cpp
+ * @brief Implementation of GLFW polling input management and cursor tracking.
+ */
+
 #include "RT-PhysicsCore/rendering/Input.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
@@ -21,14 +26,20 @@ namespace RT_PhysicsCore
     void Input::Update()
     {
         if (!window)
+        {
             return;
+        }
 
         std::memcpy(previousKeys, currentKeys, sizeof(currentKeys));
         for (int key = 0; key < kMaxKeys; ++key)
+        {
             currentKeys[key] = (glfwGetKey(window, key) == GLFW_PRESS);
+        }
 
         for (int button = 0; button < kMaxMouseButtons; ++button)
+        {
             currentMouseButtons[button] = (glfwGetMouseButton(window, button) == GLFW_PRESS);
+        }
 
         glfwGetCursorPos(window, &mouseX, &mouseY);
 
@@ -56,7 +67,9 @@ namespace RT_PhysicsCore
     bool Input::WasKeyPressed(int glfwKeyCode) const
     {
         if (glfwKeyCode < 0 || glfwKeyCode >= kMaxKeys)
+        {
             return false;
+        }
         return currentKeys[glfwKeyCode] && !previousKeys[glfwKeyCode];
     }
 
@@ -65,16 +78,37 @@ namespace RT_PhysicsCore
         return glfwMouseButton >= 0 && glfwMouseButton < kMaxMouseButtons && currentMouseButtons[glfwMouseButton];
     }
 
-    double Input::MouseX() const { return mouseX; }
-    double Input::MouseY() const { return mouseY; }
-    double Input::MouseDeltaX() const { return mouseDeltaX; }
-    double Input::MouseDeltaY() const { return mouseDeltaY; }
-    double Input::MouseScrollDeltaY() const { return mouseScrollDeltaY; }
+    double Input::MouseX() const
+    {
+        return mouseX;
+    }
+
+    double Input::MouseY() const
+    {
+        return mouseY;
+    }
+
+    double Input::MouseDeltaX() const
+    {
+        return mouseDeltaX;
+    }
+
+    double Input::MouseDeltaY() const
+    {
+        return mouseDeltaY;
+    }
+
+    double Input::MouseScrollDeltaY() const
+    {
+        return mouseScrollDeltaY;
+    }
 
     void Input::SetCursorCaptured(bool captured)
     {
         if (!window || captured == cursorCaptured)
+        {
             return;
+        }
 
         cursorCaptured = captured;
         glfwSetInputMode(window, GLFW_CURSOR, captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
@@ -87,7 +121,10 @@ namespace RT_PhysicsCore
         mouseDeltaY = 0.0;
     }
 
-    bool Input::IsCursorCaptured() const { return cursorCaptured; }
+    bool Input::IsCursorCaptured() const
+    {
+        return cursorCaptured;
+    }
 
     void Input::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     {

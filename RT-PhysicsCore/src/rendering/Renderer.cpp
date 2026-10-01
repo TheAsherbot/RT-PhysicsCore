@@ -1,12 +1,15 @@
+/**
+ * @file Renderer.cpp
+ * @brief Implementation of OpenGL 3.3 Core rendering backend and primitive buffers.
+ */
+
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/components/MeshComponent.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 #include "RT-PhysicsCore/utils/DebugDraw.h"
 #include "RT-PhysicsCore/utils/Log.h"
 
-// glad must be included before GLFW - GLFW pulls in system GL headers
-// unless it detects a loader was already included, which causes macro
-// redefinition errors if the order is reversed.
+ // GLAD must be included before GLFW to prevent header redefinition conflicts
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
@@ -24,13 +27,6 @@ namespace RT_PhysicsCore
     namespace
     {
         constexpr float kPi = 3.14159265358979323846f;
-
-        // ---- shaders -------------------------------------------------
-        // Embedded as string literals rather than loaded from disk: with
-        // only two small shaders, this avoids "where does this relative
-        // path resolve from" entirely (the same problem the logs/ folder
-        // had) at essentially no cost. Worth switching to file-based
-        // loading only if shader iteration speed becomes a real need.
 
         const char* kMeshVertexSrc = R"(
 #version 330 core
@@ -100,12 +96,11 @@ void main()
 }
 )";
 
-        // ---- primitive geometry ---------------------------------------
-        // Verified separately: vertex counts, bounds, unit normals, and
-        // (for the cube) winding order all checked against expected values
-        // before this went anywhere near GL.
-
-        struct MeshVertex { glm::vec3 position; glm::vec3 normal; };
+        struct MeshVertex
+        {
+            glm::vec3 position;
+            glm::vec3 normal;
+        };
 
         std::vector<MeshVertex> GenerateCube()
         {
@@ -126,7 +121,6 @@ void main()
 
         std::vector<MeshVertex> GeneratePlane()
         {
-            // Unit quad on XZ, facing +Y - matches this project's Y-up convention.
             std::vector<MeshVertex> v;
             glm::vec3 n(0.0f, 1.0f, 0.0f);
             v.push_back({ {-0.5f, 0.0f, -0.5f}, n });
@@ -170,8 +164,6 @@ void main()
             }
             return v;
         }
-
-        // ---- small GL helpers -----------------------------------------
 
         GLuint CompileShader(GLenum type, const char* src, const char* label)
         {
@@ -269,7 +261,7 @@ void main()
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE); // required on macOS, harmless elsewhere
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
         impl->window = glfwCreateWindow(width, height, title, nullptr, nullptr);
         if (!impl->window)
@@ -349,12 +341,17 @@ void main()
         }
 
         if (impl && impl->window)
+        {
             glfwDestroyWindow(impl->window);
+        }
 
-        glfwTerminate(); // documented safe to call even if init never succeeded
+        glfwTerminate();
     }
 
-    bool Renderer::IsValid() const { return impl->valid; }
+    bool Renderer::IsValid() const
+    {
+        return impl->valid;
+    }
 
     bool Renderer::ShouldClose() const
     {
@@ -363,7 +360,10 @@ void main()
 
     void Renderer::BeginFrame()
     {
-        if (!impl->valid) return;
+        if (!impl->valid)
+        {
+            return;
+        }
 
         glfwPollEvents();
         impl->input.Update();
@@ -379,17 +379,17 @@ void main()
 
     void Renderer::DrawMesh(const MeshComponent& mesh, const WorldTransformComponent& worldTransform)
     {
-        if (!impl->valid) return;
+        if (!impl->valid)
+        {
+            return;
+        }
 
         auto it = impl->primitives.find(mesh.shape);
         if (it == impl->primitives.end())
+        {
             return;
+        }
 
-        // T * R * S, applied to a local vertex as (T * (R * (S * v))):
-        // scale happens first (around the mesh's own local origin), then
-        // rotate, then translate into world position - the same order
-        // TransformPropagationSystem already uses when it composes world
-        // transforms, so this stays consistent with it.
         glm::mat4 model = glm::translate(glm::mat4(1.0f), worldTransform.worldPosition)
             * glm::mat4_cast(worldTransform.worldRotation)
             * glm::scale(glm::mat4(1.0f), worldTransform.worldScale);
@@ -414,11 +414,16 @@ void main()
 
     void Renderer::FlushDebugDraw()
     {
-        if (!impl->valid) return;
+        if (!impl->valid)
+        {
+            return;
+        }
 
         DebugDrawData debugData = DebugDraw::TakeLines();
         if (debugData.depthTestedLines.empty() && debugData.alwaysOnTopLines.empty())
+        {
             return;
+        }
 
         int fbWidth = 1, fbHeight = 1;
         glfwGetFramebufferSize(impl->window, &fbWidth, &fbHeight);
@@ -436,7 +441,6 @@ void main()
         const GLsizei depthTestedCount = static_cast<GLsizei>(debugData.depthTestedLines.size());
         const GLsizei alwaysOnTopCount = static_cast<GLsizei>(debugData.alwaysOnTopLines.size());
 
-        // Pack both lists into a single buffer upload
         debugData.depthTestedLines.insert(
             debugData.depthTestedLines.end(),
             debugData.alwaysOnTopLines.begin(),
@@ -446,30 +450,45 @@ void main()
             static_cast<GLsizeiptr>(debugData.depthTestedLines.size() * sizeof(DebugLineVertex)),
             debugData.depthTestedLines.data(), GL_DYNAMIC_DRAW);
 
-        // 1. Draw depth-tested lines (occluded by scene meshes)
         if (depthTestedCount > 0)
         {
             glDrawArrays(GL_LINES, 0, depthTestedCount);
         }
 
-        // 2. Draw overlay lines (draws on top of everything)
         if (alwaysOnTopCount > 0)
         {
             glDisable(GL_DEPTH_TEST);
             glDrawArrays(GL_LINES, depthTestedCount, alwaysOnTopCount);
-            glEnable(GL_DEPTH_TEST); // Restore default state
+            glEnable(GL_DEPTH_TEST);
         }
     }
 
     void Renderer::EndFrame()
     {
-        if (!impl->valid) return;
+        if (!impl->valid)
+        {
+            return;
+        }
         glfwSwapBuffers(impl->window);
     }
 
-    Camera& Renderer::GetCamera() { return impl->camera; }
-    const Camera& Renderer::GetCamera() const { return impl->camera; }
+    Camera& Renderer::GetCamera()
+    {
+        return impl->camera;
+    }
 
-    Input& Renderer::GetInput() { return impl->input; }
-    const Input& Renderer::GetInput() const { return impl->input; }
+    const Camera& Renderer::GetCamera() const
+    {
+        return impl->camera;
+    }
+
+    Input& Renderer::GetInput()
+    {
+        return impl->input;
+    }
+
+    const Input& Renderer::GetInput() const
+    {
+        return impl->input;
+    }
 }

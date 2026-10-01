@@ -1,3 +1,11 @@
+/**
+ * @file Camera.h
+ * @brief 3D perspective camera supporting Free-Fly and Orbit debug modes.
+ *
+ * Computes View and Projection matrices for 3D rendering and updates orientation/position
+ * from keyboard, mouse-look, and scroll input.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>
@@ -7,66 +15,78 @@ struct GLFWwindow;
 
 namespace RT_PhysicsCore
 {
-    // Free-fly / orbit debug camera. Owned by Renderer, driven by GLFW input
-    // each frame via ProcessInput().
-    //
-    // Two modes, cycled with Tab (logged via Log each time it switches):
-    //   Mode::FreeFly - WASD/Space/Ctrl move the camera itself; mouse looks
-    //                   around. W always moves "forward" from the camera's
-    //                   own point of view, not along a fixed world axis.
-    //   Mode::Orbit   - WASD/Space/Ctrl move a pivot point (orbitTarget)
-    //                   instead of the camera; mouse swings the camera
-    //                   around that pivot; scroll zooms (changes distance
-    //                   to the pivot). The camera always faces the pivot.
-    // Switching modes never jumps the view: entering Orbit drops the pivot
-    // out in front of wherever the camera currently is, and leaving Orbit
-    // just continues from the camera's current position.
-    //
-    // Mouse look/orbit only takes effect while the cursor is disabled/
-    // captured (GLFW_CURSOR_DISABLED) - Renderer is expected to enable that
-    // mode, typically in response to a click or a dedicated toggle key, so
-    // the camera doesn't spin the moment the window gets focus. WASD/Space/
-    // Ctrl and scroll are NOT gated behind cursor capture.
-    //
-    // GLFW has no polling API for scroll, so it has to reach the camera via
-    // callback: Renderer's GLFW scroll callback should call
-    // camera.ProcessScroll(yoffset) each time it fires.
+    /**
+     * @class Camera
+     * @brief Dual-mode 3D camera with Free-Fly and Orbit navigation.
+     */
     class Camera
     {
     public:
+        /**
+         * @enum Mode
+         * @brief Navigation control style.
+         */
         enum class Mode
         {
-            FreeFly,
-            Orbit
+            FreeFly, ///< WASD moves camera along its own view axes; mouse looks freely.
+            Orbit    ///< WASD moves orbitTarget pivot; mouse swings camera around pivot.
         };
 
+        /**
+         * @brief Constructs the camera at an initial world position.
+         * @param startPosition World position (default: [0, 5, 20]).
+         */
         explicit Camera(glm::vec3 startPosition = glm::vec3(0.0f, 5.0f, 20.0f));
 
+        /**
+         * @brief Processes user input and updates camera pose and mode transitions.
+         * @param input Reference to the Input system.
+         * @param deltaTime Frame delta time in seconds.
+         */
         void ProcessInput(Input& input, float deltaTime);
 
+        /**
+         * @brief Sets the camera navigation mode.
+         * @param newMode Target navigation mode.
+         */
         void SetMode(Mode newMode);
+
+        /**
+         * @brief Gets current active camera navigation mode.
+         * @return Active Mode.
+         */
         Mode GetMode() const;
 
+        /**
+         * @brief Computes the 4x4 View matrix for coordinate transformation to camera space.
+         * @return View matrix.
+         */
         glm::mat4 GetViewMatrix() const;
+
+        /**
+         * @brief Computes perspective projection matrix for the current viewport aspect ratio.
+         * @param aspectRatio Viewport width divided by height.
+         * @return Perspective projection matrix.
+         */
         glm::mat4 GetProjectionMatrix(float aspectRatio) const;
 
-        glm::vec3 position;
-        float yawDegrees{ -90.0f };   // -90 so the default facing direction is -Z
-        float pitchDegrees{ 0.0f };
+        glm::vec3 position;          ///< World-space camera location.
+        float yawDegrees{ -90.0f };  ///< Horizontal rotation angle in degrees (-90 facing -Z).
+        float pitchDegrees{ 0.0f };  ///< Vertical elevation angle in degrees [-89, +89].
 
-        float fovDegrees{ 45.0f };
-        float nearPlane{ 0.1f };
-        float farPlane{ 500.0f };
+        float fovDegrees{ 45.0f };   ///< Vertical field of view in degrees.
+        float nearPlane{ 0.1f };     ///< Near clipping plane distance.
+        float farPlane{ 500.0f };    ///< Far clipping plane distance.
 
-        float moveSpeed{ 5.0f };          // world units per second
-        float mouseSensitivity{ 0.1f };   // degrees per pixel of mouse delta
+        float moveSpeed{ 5.0f };          ///< Translation speed in world units per second.
+        float mouseSensitivity{ 0.1f };   ///< Mouse look sensitivity in degrees per pixel.
 
-        // Orbit mode only
-        glm::vec3 orbitTarget{ 0.0f, 0.0f, 0.0f }; // pivot the camera swings around / WASD moves
-        float orbitDistance{ 10.0f };              // distance from orbitTarget to the camera
-        float minOrbitDistance{ 1.0f };
-        float maxOrbitDistance{ 100.0f };
-        float zoomSpeed{ 1.0f };                   // world units per scroll tick
+        // Orbit mode properties:
+        glm::vec3 orbitTarget{ 0.0f, 0.0f, 0.0f }; ///< Focal pivot point in world space.
+        float orbitDistance{ 10.0f };              ///< Distance from orbitTarget to camera eye.
+        float minOrbitDistance{ 1.0f };            ///< Minimum allowed orbit zoom distance.
+        float maxOrbitDistance{ 100.0f };          ///< Maximum allowed orbit zoom distance.
+        float zoomSpeed{ 1.0f };                   ///< Distance zoom delta per scroll notch.
 
     private:
         glm::vec3 Front() const;

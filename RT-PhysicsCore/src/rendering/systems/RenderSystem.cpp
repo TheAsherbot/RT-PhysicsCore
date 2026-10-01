@@ -1,3 +1,8 @@
+/**
+ * @file RenderSystem.cpp
+ * @brief Implementation of the ECS render system pass.
+ */
+
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/components/MeshComponent.h"
@@ -20,7 +25,9 @@ namespace RT_PhysicsCore
             auto* mesh = scene.GetComponent<MeshComponent>(e);
             auto* worldTransform = scene.GetComponent<WorldTransformComponent>(e);
             if (!mesh || !worldTransform)
+            {
                 continue;
+            }
 
             renderer.DrawMesh(*mesh, *worldTransform);
         }
