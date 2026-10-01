@@ -1,3 +1,8 @@
+/**
+ * @file FixedTimestep.cpp
+ * @brief Implementation of fixed-timestep accumulator logic and spiral-of-death clamping.
+ */
+
 #include "FixedTimestep.h"
 #include "RT-PhysicsCore/utils/Log.h"
 #include <chrono>

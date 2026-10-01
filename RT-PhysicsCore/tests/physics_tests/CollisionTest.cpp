@@ -1,8 +1,10 @@
-// CollisionTest.cpp : standalone executable exercising every narrow-phase
-// shape pair. Runs an automated pass/fail check against expected results
-// on startup (logged), then opens a window and auto-cycles through each
-// test case every few seconds, drawing both shapes and the resulting
-// contact points/normal so results can be checked visually too.
+/**
+ * @file CollisionTest.cpp
+ * @brief Standalone test harness exercising pairwise narrow-phase collision tests.
+ *
+ * Runs automated pass/fail verification of intersection algorithms on startup,
+ * then renders an interactive cycling 3D visual debug scene with contact manifolds.
+ */
 
 #include <chrono>
 #include <cmath>
@@ -25,11 +27,11 @@ namespace
         RT_PhysicsCore::ColliderPose a;
         RT_PhysicsCore::ColliderPose b;
         bool expectHit;
-        int expectPointCount = -1; // -1 = don't check the exact count
+        int expectPointCount = -1;
     };
 
     RT_PhysicsCore::ColliderPose MakePose(RT_PhysicsCore::ColliderShape shape, const glm::vec3& size,
-                                           const glm::vec3& pos, glm::quat rot = glm::quat(1.0f, 0.0f, 0.0f, 0.0f))
+        const glm::vec3& pos, glm::quat rot = glm::quat(1.0f, 0.0f, 0.0f, 0.0f))
     {
         RT_PhysicsCore::ColliderPose pose;
         pose.shape = shape;
@@ -46,41 +48,51 @@ namespace
 
         switch (pose.shape)
         {
-            case ColliderShape::Sphere:
-                DebugDraw::Sphere(pose.position, pose.size.x, color);
-                break;
+        case ColliderShape::Sphere:
+        {
+            DebugDraw::Sphere(pose.position, pose.size.x, color);
+            break;
+        }
 
-            case ColliderShape::Box:
+        case ColliderShape::Box:
+        {
+            glm::vec3 h = pose.size;
+            glm::vec3 c[8];
+            int idx = 0;
+            for (float sx : { -1.0f, 1.0f })
             {
-                glm::vec3 h = pose.size;
-                glm::vec3 c[8];
-                int idx = 0;
-                for (float sx : { -1.0f, 1.0f })
-                    for (float sy : { -1.0f, 1.0f })
-                        for (float sz : { -1.0f, 1.0f })
-                            c[idx++] = pose.position + pose.rotation[0] * sx * h.x
-                                                      + pose.rotation[1] * sy * h.y
-                                                      + pose.rotation[2] * sz * h.z;
-
-                static const int edges[12][2] = {
-                    {0,1},{0,2},{0,4},{3,1},{3,2},{3,7},
-                    {5,1},{5,4},{5,7},{6,2},{6,4},{6,7}
-                };
-                for (auto& edge : edges)
-                    DebugDraw::Line(c[edge[0]], c[edge[1]], color);
-                break;
+                for (float sy : { -1.0f, 1.0f })
+                {
+                    for (float sz : { -1.0f, 1.0f })
+                    {
+                        c[idx++] = pose.position + pose.rotation[0] * sx * h.x
+                            + pose.rotation[1] * sy * h.y
+                            + pose.rotation[2] * sz * h.z;
+                    }
+                }
             }
 
-            case ColliderShape::Capsule:
+            static const int edges[12][2] = {
+                {0,1},{0,2},{0,4},{3,1},{3,2},{3,7},
+                {5,1},{5,4},{5,7},{6,2},{6,4},{6,7}
+            };
+            for (auto& edge : edges)
             {
-                glm::vec3 axis = pose.rotation[1] * pose.size.y;
-                glm::vec3 capA = pose.position - axis;
-                glm::vec3 capB = pose.position + axis;
-                DebugDraw::Line(capA, capB, color);
-                DebugDraw::Sphere(capA, pose.size.x, color, 12);
-                DebugDraw::Sphere(capB, pose.size.x, color, 12);
-                break;
+                DebugDraw::Line(c[edge[0]], c[edge[1]], color);
             }
+            break;
+        }
+
+        case ColliderShape::Capsule:
+        {
+            glm::vec3 axis = pose.rotation[1] * pose.size.y;
+            glm::vec3 capA = pose.position - axis;
+            glm::vec3 capB = pose.position + axis;
+            DebugDraw::Line(capA, capB, color);
+            DebugDraw::Sphere(capA, pose.size.x, color, 12);
+            DebugDraw::Sphere(capB, pose.size.x, color, 12);
+            break;
+        }
         }
     }
 
@@ -142,7 +154,7 @@ namespace
         tests.push_back({ "Box-Box rotated, touching",
             MakePose(ColliderShape::Box, {1,1,1}, {0,0,0}, rotY45),
             MakePose(ColliderShape::Box, {1,1,1}, {1.6f,1.6f,0}, rotX45),
-            true }); // point count not asserted - see the response notes
+            true });
 
         tests.push_back({ "Box-Box separated",
             MakePose(ColliderShape::Box, {1,1,1}, {0,0,0}),
@@ -173,8 +185,11 @@ int main()
         bool hit = RT_PhysicsCore::TestCollision(t.a, t.b, contact);
 
         bool pass = (hit == t.expectHit)
-                 && (!t.expectHit || t.expectPointCount < 0 || contact.pointCount == t.expectPointCount);
-        if (pass) ++passCount;
+            && (!t.expectHit || t.expectPointCount < 0 || contact.pointCount == t.expectPointCount);
+        if (pass)
+        {
+            ++passCount;
+        }
 
         RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << t.name
             << " - hit=" << hit << " points=" << contact.pointCount
@@ -184,9 +199,6 @@ int main()
     }
     RT_LOG_INFO(passCount << "/" << tests.size() << " automated checks passed.");
 
-    // No confirmed way to read a keypress from this file (I don't have
-    // Renderer.h/Input's attach-to-window wiring), so this auto-cycles on
-    // a timer instead - swap in a key check here if you want manual control.
     size_t current = 0;
     double elapsed = 0.0;
     constexpr double kSecondsPerTest = 3.0;
@@ -221,7 +233,7 @@ int main()
             {
                 RT_PhysicsCore::DebugDraw::Sphere(contact.points[i], 0.06f, glm::vec3(1.0f, 1.0f, 0.0f), 8, false);
                 RT_PhysicsCore::DebugDraw::Line(contact.points[i], contact.points[i] + contact.normal * 0.6f,
-                                                 glm::vec3(1.0f, 0.0f, 0.0f), false);
+                    glm::vec3(1.0f, 0.0f, 0.0f), false);
             }
         }
 

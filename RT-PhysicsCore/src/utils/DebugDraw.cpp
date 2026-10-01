@@ -1,3 +1,8 @@
+/**
+ * @file DebugDraw.cpp
+ * @brief Implementation of immediate-mode debug shape generation and vertex collection.
+ */
+
 #include "RT-PhysicsCore/utils/DebugDraw.h"
 #include <cmath>
 
@@ -36,10 +41,10 @@ namespace RT_PhysicsCore
             center + glm::vec3(-h.x, -h.y,  h.z), // 1
             center + glm::vec3(-h.x,  h.y, -h.z), // 2
             center + glm::vec3(-h.x,  h.y,  h.z), // 3
-            center + glm::vec3(h.x, -h.y, -h.z), // 4
-            center + glm::vec3(h.x, -h.y,  h.z), // 5
-            center + glm::vec3(h.x,  h.y, -h.z), // 6
-            center + glm::vec3(h.x,  h.y,  h.z), // 7
+            center + glm::vec3(h.x, -h.y, -h.z),  // 4
+            center + glm::vec3(h.x, -h.y,  h.z),  // 5
+            center + glm::vec3(h.x,  h.y, -h.z),  // 6
+            center + glm::vec3(h.x,  h.y,  h.z),  // 7
         };
 
         // bottom face
@@ -62,7 +67,9 @@ namespace RT_PhysicsCore
     void DebugDraw::Sphere(const glm::vec3& center, float radius, const glm::vec3& color, int segments, bool depthTest)
     {
         if (segments < 3)
+        {
             segments = 3;
+        }
 
         auto ring = [&](int axis)
             {

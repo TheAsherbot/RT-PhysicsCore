@@ -1,3 +1,11 @@
+/**
+ * @file Log.h
+ * @brief Multi-sink thread-safe logging subsystem with compile-time level stripping.
+ *
+ * Provides formatted output to console (with ANSI color codes) and files, with
+ * stream-operator concatenation macros and zero-overhead dead-stripping in release builds.
+ */
+
 #pragma once
 
 #include <memory>
@@ -6,49 +14,78 @@
 
 namespace RT_PhysicsCore
 {
+    /**
+     * @enum LogLevel
+     * @brief Severity classification levels for log events.
+     */
     enum class LogLevel : int
     {
         Trace = 0,
         Debug = 1,
-        Info  = 2,
-        Warn  = 3,
+        Info = 2,
+        Warn = 3,
         Error = 4,
         Fatal = 5
     };
 
+    /**
+     * @brief Converts a LogLevel enum value to a 5-character uppercase string representation.
+     * @param level Severity level.
+     * @return String literal token (e.g. "INFO ", "ERROR").
+     */
     const char* ToString(LogLevel level);
 
-    // A destination for log output. Write() receives one already-formatted
-    // line (timestamp, level, file:line, message all baked in) - sinks just
-    // decide where that line goes.
+    /**
+     * @class ILogSink
+     * @brief Abstract destination sink receiving formatted log messages.
+     */
     class ILogSink
     {
     public:
         virtual ~ILogSink();
+
+        /**
+         * @brief Dispatches one pre-formatted log line to the destination output.
+         * @param level Severity level of the message.
+         * @param formattedLine Fully formatted text string including timestamps and source tags.
+         */
         virtual void Write(LogLevel level, const std::string& formattedLine) = 0;
     };
 
-    // Console sink. Colors by level and enables ANSI/VT100 processing on
-    // Windows automatically; Trace/Debug/Info go to stdout, Warn/Error/Fatal
-    // go to stderr so they can be redirected separately.
+    /**
+     * @class ConsoleLogSink
+     * @brief Terminal log sink with VT100/ANSI color highlighting.
+     */
     class ConsoleLogSink : public ILogSink
     {
     public:
+        /**
+         * @brief Constructs console sink.
+         * @param useColor True to format severity with ANSI terminal colors.
+         */
         explicit ConsoleLogSink(bool useColor = true);
+
         void Write(LogLevel level, const std::string& formattedLine) override;
 
     private:
         bool useColor;
     };
 
-    // Appends (or truncates, by default) formatted lines to a file. Flushes
-    // every line - costs some I/O throughput, but means a crash mid-run
-    // doesn't lose the tail of the log, which matters more here.
+    /**
+     * @class FileLogSink
+     * @brief Disk log sink appending timestamped records to a file with per-line flushing.
+     */
     class FileLogSink : public ILogSink
     {
     public:
+        /**
+         * @brief Constructs a file sink targeting a specific file path.
+         * @param path Target log destination path on disk.
+         * @param append True to append to existing file; false to overwrite.
+         */
         explicit FileLogSink(const std::string& path, bool append = false);
         ~FileLogSink() override;
+
         void Write(LogLevel level, const std::string& formattedLine) override;
 
     private:
@@ -56,49 +93,67 @@ namespace RT_PhysicsCore
         std::unique_ptr<Impl> impl;
     };
 
-    // Builds "<directory>/RT-PhysicsCore_YYYY-MM-DD_HH-MM-SS.log" and creates
-    // <directory> if it doesn't exist yet. Convenience for FileLogSink's path.
+    /**
+     * @brief Generates a standard timestamped log filename: `<dir>/RT-PhysicsCore_YYYY-MM-DD_HH-MM-SS.log`.
+     * @param directory Output folder path (default: "logs").
+     * @return Full relative file path string.
+     */
     std::string DefaultLogFilePath(const std::string& directory = "logs");
 
-    // Static log facade - no instance to fetch, just call Log::Write (or,
-    // normally, go through the RT_LOG_* macros below instead).
-    //
-    // A ConsoleLogSink is registered automatically on first use, so basic
-    // logging works with zero setup. Nothing else is automatic: library
-    // code (Engine, Scene, systems, ...) should only ever call RT_LOG_*,
-    // never touch sinks - only the application (main.cpp) decides where
-    // logs actually go, e.g. by calling AddSink for a log file.
+    /**
+     * @class Log
+     * @brief Static facade coordinating sink distribution and severity thresholding.
+     */
     class Log
     {
     public:
+        /**
+         * @brief Sets minimum severity level processed by registered sinks.
+         * @param level Lowest active severity level.
+         */
         static void SetMinLevel(LogLevel level);
+
+        /**
+         * @brief Gets current minimum active log severity level.
+         * @return Active LogLevel.
+         */
         static LogLevel GetMinLevel();
+
+        /**
+         * @brief Checks if a specific severity level is enabled for processing.
+         * @param level Level to test.
+         * @return True if level meets or exceeds GetMinLevel().
+         */
         static bool IsLevelEnabled(LogLevel level);
 
+        /**
+         * @brief Registers an additional output destination sink.
+         * @param sink Unique pointer to ILogSink instance.
+         */
         static void AddSink(std::unique_ptr<ILogSink> sink);
-        static void ClearSinks(); // removes the default console sink too
 
-        // Formats one line and dispatches it to every registered sink.
-        // Prefer the RT_LOG_* macros: they capture file/line for you and,
-        // when RT_LOG_ACTIVE_LEVEL strips a level at compile time, skip
-        // building the message entirely rather than just filtering it here.
+        /**
+         * @brief Clears all registered sinks, including the default console sink.
+         */
+        static void ClearSinks();
+
+        /**
+         * @brief Formats a log line and dispatches it to all active sinks.
+         * @param level Severity level.
+         * @param file Source file originating the log event.
+         * @param line Source line number.
+         * @param message Text payload.
+         */
         static void Write(LogLevel level, const char* file, int line, const std::string& message);
     };
 }
 
-// --- Compile-time level gate ---
-// Define RT_LOG_ACTIVE_LEVEL (0=Trace .. 5=Fatal) before including this
-// header - e.g. as a CMake compile definition - to strip lower levels out
-// of the build entirely. Below the active level, RT_LOG_* expands to
-// nothing: the logged expression isn't even evaluated. Defaults to
-// everything enabled in debug builds, Info-and-up in NDEBUG (release)
-// builds, if not set explicitly.
 #ifndef RT_LOG_ACTIVE_LEVEL
-    #ifdef NDEBUG
-        #define RT_LOG_ACTIVE_LEVEL 2
-    #else
-        #define RT_LOG_ACTIVE_LEVEL 0
-    #endif
+#ifdef NDEBUG
+#define RT_LOG_ACTIVE_LEVEL 2
+#else
+#define RT_LOG_ACTIVE_LEVEL 0
+#endif
 #endif
 
 #define RT_LOG_IMPL(level, expr)                                             \
@@ -112,38 +167,33 @@ namespace RT_PhysicsCore
     } while (0)
 
 #if RT_LOG_ACTIVE_LEVEL <= 0
-    #define RT_LOG_TRACE(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Trace, expr)
+#define RT_LOG_TRACE(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Trace, expr)
 #else
-    #define RT_LOG_TRACE(expr) do {} while (0)
+#define RT_LOG_TRACE(expr) do {} while (0)
 #endif
 
 #if RT_LOG_ACTIVE_LEVEL <= 1
-    #define RT_LOG_DEBUG(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Debug, expr)
+#define RT_LOG_DEBUG(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Debug, expr)
 #else
-    #define RT_LOG_DEBUG(expr) do {} while (0)
+#define RT_LOG_DEBUG(expr) do {} while (0)
 #endif
 
 #if RT_LOG_ACTIVE_LEVEL <= 2
-    #define RT_LOG_INFO(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Info, expr)
+#define RT_LOG_INFO(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Info, expr)
 #else
-    #define RT_LOG_INFO(expr) do {} while (0)
+#define RT_LOG_INFO(expr) do {} while (0)
 #endif
 
 #if RT_LOG_ACTIVE_LEVEL <= 3
-    #define RT_LOG_WARN(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Warn, expr)
+#define RT_LOG_WARN(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Warn, expr)
 #else
-    #define RT_LOG_WARN(expr) do {} while (0)
+#define RT_LOG_WARN(expr) do {} while (0)
 #endif
 
 #if RT_LOG_ACTIVE_LEVEL <= 4
-    #define RT_LOG_ERROR(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Error, expr)
+#define RT_LOG_ERROR(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Error, expr)
 #else
-    #define RT_LOG_ERROR(expr) do {} while (0)
+#define RT_LOG_ERROR(expr) do {} while (0)
 #endif
 
-// Fatal always compiles in, even in a fully-stripped release build - if
-// something's fatal you want to know about it regardless. Note this only
-// *logs* - it doesn't abort/exit on its own; the caller decides what to do
-// after a fatal log, so the logging system never has surprise control-flow
-// side effects.
 #define RT_LOG_FATAL(expr) RT_LOG_IMPL(::RT_PhysicsCore::LogLevel::Fatal, expr)
