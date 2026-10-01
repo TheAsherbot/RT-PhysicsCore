@@ -1,3 +1,8 @@
+/**
+ * @file PhysicsSystem.cpp
+ * @brief Implementation of rigid body dynamics integration and force accumulation.
+ */
+
 #include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
@@ -11,8 +16,15 @@ namespace RT_PhysicsCore
         : ISystem(scene)
     {}
 
-    void PhysicsSystem::SetGravity(const glm::vec3& g) { gravity = g; }
-    const glm::vec3& PhysicsSystem::GetGravity() const { return gravity; }
+    void PhysicsSystem::SetGravity(const glm::vec3& g)
+    {
+        gravity = g;
+    }
+
+    const glm::vec3& PhysicsSystem::GetGravity() const
+    {
+        return gravity;
+    }
 
     void PhysicsSystem::FixedUpdate(double dt)
     {
@@ -24,7 +36,9 @@ namespace RT_PhysicsCore
             auto* transform = scene.GetComponent<TransformComponent>(e);
             auto* body = scene.GetComponent<RigidBodyComponent>(e);
             if (!transform || !body)
+            {
                 continue;
+            }
 
             if (body->invMass <= 0.0f)
             {

@@ -1,3 +1,11 @@
+/**
+ * @file ResolutionSystem.h
+ * @brief Contact constraint resolution system handling bounce, non-penetration, and friction.
+ *
+ * Supports iterative Sequential Impulses and exact Linear Complementarity Problem (LCP)
+ * Lemke pivoting with true circular Coulomb friction cones and split-impulse position correction.
+ */
+
 #pragma once
 
 #include "RT-PhysicsCore/core/ecs/core/System.h"
@@ -8,64 +16,129 @@ namespace RT_PhysicsCore
 {
     class CollisionSystem;
 
-    // Contact resolution: non-penetration, restitution (bounce), and
-    // Coulomb friction (true circular cone, not the square-pyramid
-    // approximation).
-    //
-    // Two independent choices, each switchable at startup (constructor)
-    // or at runtime (setters - e.g. from a hotkey):
-    //  - SolverMode: SequentialImpulses (iterative, bounded, predictable
-    //    cost every step) or Exact (normal impulses solved simultaneously
-    //    via Lemke's algorithm; friction still runs as an iterative pass
-    //    afterward, bounded by those now-fixed normal impulses - jointly
-    //    solving normal-and-friction exactly is a genuinely harder,
-    //    nonlinear problem this isn't attempting). Falls back to
-    //    sequential impulses (logged) if the exact solve doesn't converge.
-    //  - IterationMode (sequential-impulses, and Exact's friction pass):
-    //    Fixed (always the configured iteration count) or Adaptive (keep
-    //    iterating within a time budget, floored/ceilinged by min/max).
-    //
-    // Position correction (leftover-penetration cleanup) always runs the
-    // same way regardless of which velocity solver was used - it's an
-    // orthogonal concern.
+    /**
+     * @class ResolutionSystem
+     * @brief Resolves collision contacts through velocity impulses and positional adjustments.
+     */
     class ResolutionSystem : public ISystem
     {
     public:
-        enum class SolverMode { SequentialImpulses, Exact };
-        enum class IterationMode { Fixed, Adaptive };
+        /**
+         * @enum SolverMode
+         * @brief Mathematical scheme used to compute normal velocity contact impulses.
+         */
+        enum class SolverMode
+        {
+            SequentialImpulses, ///< Iterative Projected Gauss-Seidel constraint solving.
+            Exact               ///< Simultaneous exact normal solve via Lemke LCP algorithm.
+        };
 
+        /**
+         * @enum IterationMode
+         * @brief Loop termination policy for iterative solver passes.
+         */
+        enum class IterationMode
+        {
+            Fixed,   ///< Always executes a constant number of iterations.
+            Adaptive ///< Dynamically iterates within a millisecond time budget.
+        };
+
+        /**
+         * @brief Constructs the contact resolution system.
+         * @param scene Reference to the parent Scene world.
+         * @param collisionSystem CollisionSystem supplying active contact manifolds.
+         * @param initialMode Initial solver formulation (default: SequentialImpulses).
+         */
         ResolutionSystem(Scene& scene, CollisionSystem& collisionSystem,
             SolverMode initialMode = SolverMode::SequentialImpulses);
 
+        /**
+         * @brief Executes contact resolution during the fixed physics tick.
+         * @param dt Fixed delta time in seconds.
+         */
         void FixedUpdate(double dt) override;
 
+        /**
+         * @brief Selects between Sequential Impulses and Exact Lemke LCP solving.
+         * @param mode Desired solver mode.
+         */
         void SetSolverMode(SolverMode mode);
+
+        /**
+         * @brief Gets the current solver formulation mode.
+         * @return Active SolverMode.
+         */
         SolverMode GetSolverMode() const;
 
+        /**
+         * @brief Configures fixed vs. time-budgeted adaptive iteration.
+         * @param mode Desired iteration mode.
+         */
         void SetIterationMode(IterationMode mode);
+
+        /**
+         * @brief Gets the current iteration control policy.
+         * @return Active IterationMode.
+         */
         IterationMode GetIterationMode() const;
 
+        /**
+         * @brief Sets iteration count for the velocity impulse solver (Fixed mode).
+         * @param iterations Number of iterations (default: 8).
+         */
         void SetVelocityIterations(int iterations);
+
+        /**
+         * @brief Sets iteration count for positional penetration correction (Fixed mode).
+         * @param iterations Number of iterations (default: 3).
+         */
         void SetPositionIterations(int iterations);
 
-        // Only consulted in Adaptive mode.
+        /**
+         * @brief Configures iteration bounds for adaptive velocity solving.
+         * @param minIterations Minimum iterations executed regardless of budget.
+         * @param maxIterations Hard cap on total iterations.
+         */
         void SetVelocityIterationBounds(int minIterations, int maxIterations);
+
+        /**
+         * @brief Configures iteration bounds for adaptive position correction.
+         * @param minIterations Minimum iterations executed regardless of budget.
+         * @param maxIterations Hard cap on total iterations.
+         */
         void SetPositionIterationBounds(int minIterations, int maxIterations);
+
+        /**
+         * @brief Sets maximum execution time allowed for velocity resolution in Adaptive mode.
+         * @param milliseconds Time budget in milliseconds.
+         */
         void SetVelocityTimeBudgetMs(float milliseconds);
+
+        /**
+         * @brief Sets maximum execution time allowed for position correction in Adaptive mode.
+         * @param milliseconds Time budget in milliseconds.
+         */
         void SetPositionTimeBudgetMs(float milliseconds);
 
-        // Only consulted in Exact mode. 0 = solver picks a size-based default.
+        /**
+         * @brief Sets pivot cap for the Lemke LCP solver in Exact mode (0 = size-based default).
+         * @param pivots Maximum pivot iterations.
+         */
         void SetMaxLcpPivots(int pivots);
 
-        // Below this closing speed, a contact is treated as resting
-        // (restitution forced to 0) rather than a real impact - otherwise
-        // a resting body's tiny per-step gravity drift reads as an
-        // endless tiny bounce.
+        /**
+         * @brief Relative closing speed threshold below which restitution is forced to zero.
+         *
+         * Prevents resting contacts under gravity from endlessly micro-bouncing.
+         *
+         * @param threshold Closing speed threshold in m/s (default: 0.5 m/s).
+         */
         void SetRestitutionVelocityThreshold(float threshold);
 
-        // Below this tangential speed, a contact starts a step "stuck"
-        // (uses the material's static friction coefficient for that
-        // step) rather than "sliding" (kinetic).
+        /**
+         * @brief Tangential relative speed threshold distinguishing static sticking from sliding friction.
+         * @param threshold Tangential speed threshold in m/s (default: 0.01 m/s).
+         */
         void SetFrictionVelocityThreshold(float threshold);
 
     private:

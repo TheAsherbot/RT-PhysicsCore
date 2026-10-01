@@ -1,3 +1,11 @@
+/**
+ * @file NarrowPhase.h
+ * @brief Exact pairwise collision detection tests between geometric primitives.
+ *
+ * Dispatches shape-pair queries (Sphere, Box, Capsule) using exact Separating
+ * Axis Theorem (SAT), Sutherland-Hodgman polygon clipping, and alternating projections.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>
@@ -6,16 +14,24 @@
 
 namespace RT_PhysicsCore
 {
-    // World-space shape + pose, bundled for narrow-phase tests.
+    /**
+     * @struct ColliderPose
+     * @brief Bundles a shape descriptor with its world-space position and rotation matrix.
+     */
     struct ColliderPose
     {
-        ColliderShape shape{ColliderShape::Box};
-        glm::vec3 size{1.0f};
-        glm::vec3 position{0.0f};
-        glm::mat3 rotation{1.0f};
+        ColliderShape shape{ ColliderShape::Box }; ///< The geometric primitive shape.
+        glm::vec3 size{ 1.0f };                    ///< Dimensions / extents.
+        glm::vec3 position{ 0.0f };                ///< World position of collider origin.
+        glm::mat3 rotation{ 1.0f };                ///< World orientation matrix.
     };
 
-    // Fills outContact and returns true if a and b overlap. normal points
-    // from a toward b. Dispatches to the matching shape-pair test.
+    /**
+     * @brief Tests for intersection between two oriented geometric colliders.
+     * @param a World pose and geometry of first collider.
+     * @param b World pose and geometry of second collider.
+     * @param[out] outContact Populated collision manifold (normal points from a to b).
+     * @return True if shapes overlap and generate contacts; false otherwise.
+     */
     bool TestCollision(const ColliderPose& a, const ColliderPose& b, Contact& outContact);
 }

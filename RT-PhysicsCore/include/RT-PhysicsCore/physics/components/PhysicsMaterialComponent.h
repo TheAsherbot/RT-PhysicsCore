@@ -1,14 +1,22 @@
+/**
+ * @file PhysicsMaterialComponent.h
+ * @brief Component associating an entity with a specific surface material profile.
+ */
+
 #pragma once
 
 #include "RT-PhysicsCore/physics/PhysicsMaterial.h"
 
 namespace RT_PhysicsCore
 {
-    // Optional - CollisionSystem treats an entity with no
-    // PhysicsMaterialComponent as MaterialId::Default rather than
-    // requiring this on every collidable entity.
+    /**
+     * @struct PhysicsMaterialComponent
+     * @brief Associates an entity with surface friction and restitution coefficients.
+     *
+     * Optional component: if omitted, CollisionSystem falls back to MaterialId::Default.
+     */
     struct PhysicsMaterialComponent
     {
-        MaterialId material{MaterialId::Default};
+        MaterialId material{ MaterialId::Default }; ///< The surface material identifier.
     };
 }

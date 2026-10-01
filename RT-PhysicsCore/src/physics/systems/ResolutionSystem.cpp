@@ -1,3 +1,8 @@
+/**
+ * @file ResolutionSystem.cpp
+ * @brief Implementation of contact resolution solvers, Coulomb friction, and position correction.
+ */
+
 #include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
 #include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
@@ -133,7 +138,9 @@ namespace RT_PhysicsCore
                 + AngularEffectiveMassTerm(state.rA, state.normal, bodyA->invInertiaWorld)
                 + AngularEffectiveMassTerm(state.rB, state.normal, bodyB->invInertiaWorld);
             if (K < kEpsilon)
+            {
                 return;
+            }
 
             float lambda = -(relVelN + state.restitutionBias) / K;
 
@@ -245,13 +252,21 @@ namespace RT_PhysicsCore
 
             float total = 0.0f;
             if (pi.bodyB == pj.bodyB)
+            {
                 total += glm::dot(ImpulseEffect(pi.bodyB->invMass, pi.bodyB->invInertiaWorld, pj.rB, pi.rB, impulseOnB), pi.normal);
+            }
             if (pi.bodyB == pj.bodyA)
+            {
                 total += glm::dot(ImpulseEffect(pi.bodyB->invMass, pi.bodyB->invInertiaWorld, pj.rA, pi.rB, impulseOnA), pi.normal);
+            }
             if (pi.bodyA == pj.bodyB)
+            {
                 total -= glm::dot(ImpulseEffect(pi.bodyA->invMass, pi.bodyA->invInertiaWorld, pj.rB, pi.rA, impulseOnB), pi.normal);
+            }
             if (pi.bodyA == pj.bodyA)
+            {
                 total -= glm::dot(ImpulseEffect(pi.bodyA->invMass, pi.bodyA->invInertiaWorld, pj.rA, pi.rA, impulseOnA), pi.normal);
+            }
             return total;
         }
     }
@@ -260,38 +275,80 @@ namespace RT_PhysicsCore
         : ISystem(scene), collisionSystem(collisionSystem), solverMode(initialMode)
     {}
 
-    void ResolutionSystem::SetSolverMode(SolverMode mode) { solverMode = mode; }
-    ResolutionSystem::SolverMode ResolutionSystem::GetSolverMode() const { return solverMode; }
+    void ResolutionSystem::SetSolverMode(SolverMode mode)
+    {
+        solverMode = mode;
+    }
 
-    void ResolutionSystem::SetIterationMode(IterationMode mode) { iterationMode = mode; }
-    ResolutionSystem::IterationMode ResolutionSystem::GetIterationMode() const { return iterationMode; }
+    ResolutionSystem::SolverMode ResolutionSystem::GetSolverMode() const
+    {
+        return solverMode;
+    }
 
-    void ResolutionSystem::SetVelocityIterations(int iterations) { velocityIterations = iterations; }
-    void ResolutionSystem::SetPositionIterations(int iterations) { positionIterations = iterations; }
+    void ResolutionSystem::SetIterationMode(IterationMode mode)
+    {
+        iterationMode = mode;
+    }
+
+    ResolutionSystem::IterationMode ResolutionSystem::GetIterationMode() const
+    {
+        return iterationMode;
+    }
+
+    void ResolutionSystem::SetVelocityIterations(int iterations)
+    {
+        velocityIterations = iterations;
+    }
+
+    void ResolutionSystem::SetPositionIterations(int iterations)
+    {
+        positionIterations = iterations;
+    }
 
     void ResolutionSystem::SetVelocityIterationBounds(int minIterations, int maxIterations)
     {
         minVelocityIterations = minIterations;
         maxVelocityIterations = maxIterations;
     }
+
     void ResolutionSystem::SetPositionIterationBounds(int minIterations, int maxIterations)
     {
         minPositionIterations = minIterations;
         maxPositionIterations = maxIterations;
     }
-    void ResolutionSystem::SetVelocityTimeBudgetMs(float milliseconds) { velocityTimeBudgetMs = milliseconds; }
-    void ResolutionSystem::SetPositionTimeBudgetMs(float milliseconds) { positionTimeBudgetMs = milliseconds; }
 
-    void ResolutionSystem::SetMaxLcpPivots(int pivots) { maxLcpPivots = pivots; }
+    void ResolutionSystem::SetVelocityTimeBudgetMs(float milliseconds)
+    {
+        velocityTimeBudgetMs = milliseconds;
+    }
 
-    void ResolutionSystem::SetRestitutionVelocityThreshold(float threshold) { restitutionVelocityThreshold = threshold; }
-    void ResolutionSystem::SetFrictionVelocityThreshold(float threshold) { frictionVelocityThreshold = threshold; }
+    void ResolutionSystem::SetPositionTimeBudgetMs(float milliseconds)
+    {
+        positionTimeBudgetMs = milliseconds;
+    }
+
+    void ResolutionSystem::SetMaxLcpPivots(int pivots)
+    {
+        maxLcpPivots = pivots;
+    }
+
+    void ResolutionSystem::SetRestitutionVelocityThreshold(float threshold)
+    {
+        restitutionVelocityThreshold = threshold;
+    }
+
+    void ResolutionSystem::SetFrictionVelocityThreshold(float threshold)
+    {
+        frictionVelocityThreshold = threshold;
+    }
 
     void ResolutionSystem::FixedUpdate(double /*dt*/)
     {
         const std::vector<Contact>& contacts = collisionSystem.GetContacts();
         if (contacts.empty())
+        {
             return;
+        }
 
         if (solverMode == SolverMode::Exact)
         {
@@ -322,7 +379,9 @@ namespace RT_PhysicsCore
             const Contact& contact = contacts[c];
             valid[c] = FetchBodies(scene, contact, refs[c]);
             if (!valid[c])
+            {
                 continue;
+            }
 
             for (int p = 0; p < contact.pointCount; ++p)
             {
@@ -342,7 +401,9 @@ namespace RT_PhysicsCore
             for (size_t c = 0; c < contacts.size(); ++c)
             {
                 if (!valid[c])
+                {
                     continue;
+                }
                 for (int p = 0; p < contacts[c].pointCount; ++p)
                 {
                     SolveNormalAtPoint(refs[c].bodyA, refs[c].bodyB, states[c][p]);
@@ -354,7 +415,9 @@ namespace RT_PhysicsCore
             {
                 double elapsedMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
                 if (elapsedMs >= velocityTimeBudgetMs)
+                {
                     break;
+                }
             }
         }
     }
@@ -368,7 +431,9 @@ namespace RT_PhysicsCore
         {
             BodyRefs refs;
             if (!FetchBodies(scene, contact, refs))
+            {
                 continue;
+            }
 
             for (int p = 0; p < contact.pointCount; ++p)
             {
@@ -379,7 +444,9 @@ namespace RT_PhysicsCore
                     + AngularEffectiveMassTerm(rA, contact.normal, refs.bodyA->invInertiaWorld)
                     + AngularEffectiveMassTerm(rB, contact.normal, refs.bodyB->invInertiaWorld);
                 if (K < kEpsilon)
+                {
                     continue; // both sides immovable at this point - nothing to solve
+                }
 
                 points.push_back({ refs.bodyA, refs.bodyB, rA, rB, contact.normal,
                                     contact.restitution, contact.staticFriction, contact.kineticFriction });
@@ -388,7 +455,9 @@ namespace RT_PhysicsCore
 
         int n = static_cast<int>(points.size());
         if (n == 0)
+        {
             return true;
+        }
 
         std::vector<std::vector<float>> M(n, std::vector<float>(n));
         std::vector<float> q(n);
@@ -406,12 +475,16 @@ namespace RT_PhysicsCore
             q[i] = (1.0f + e) * relVelN;
 
             for (int j = 0; j < n; ++j)
+            {
                 M[i][j] = BuildMEntry(points[i], points[j]);
+            }
         }
 
         std::vector<float> z;
         if (!SolveLCPLemke(M, q, z, maxLcpPivots))
+        {
             return false;
+        }
 
         // All normal impulses are meant to apply simultaneously - apply
         // every velocity/momentum change first, and only refresh angular
@@ -419,7 +492,9 @@ namespace RT_PhysicsCore
         for (int i = 0; i < n; ++i)
         {
             if (z[i] <= kEpsilon)
+            {
                 continue;
+            }
             glm::vec3 impulse = z[i] * points[i].normal;
             points[i].bodyA->velocity -= points[i].bodyA->invMass * impulse;
             points[i].bodyB->velocity += points[i].bodyB->invMass * impulse;
@@ -451,8 +526,12 @@ namespace RT_PhysicsCore
 
         int maxIter = (iterationMode == IterationMode::Adaptive) ? maxVelocityIterations : velocityIterations;
         for (int iter = 0; iter < maxIter; ++iter)
+        {
             for (int i = 0; i < n; ++i)
+            {
                 SolveFrictionAtPoint(points[i].bodyA, points[i].bodyB, frictionStates[i]);
+            }
+        }
 
         return true;
     }
@@ -472,7 +551,9 @@ namespace RT_PhysicsCore
         {
             valid[c] = FetchBodies(scene, contacts[c], refs[c]);
             for (int p = 0; p < contacts[c].pointCount; ++p)
+            {
                 separation[c][p] = -contacts[c].penetrations[p];
+            }
         }
 
         int maxIter = (iterationMode == IterationMode::Adaptive) ? maxPositionIterations : positionIterations;
@@ -483,7 +564,9 @@ namespace RT_PhysicsCore
             for (size_t c = 0; c < contacts.size(); ++c)
             {
                 if (!valid[c])
+                {
                     continue;
+                }
                 const Contact& contact = contacts[c];
 
                 for (int p = 0; p < contact.pointCount; ++p)
@@ -491,7 +574,9 @@ namespace RT_PhysicsCore
                     float& sep = separation[c][p];
                     float correction = std::min(std::max(kBeta * (-sep - kSlop), 0.0f), kMaxCorrection);
                     if (correction <= 0.0f)
+                    {
                         continue;
+                    }
 
                     glm::vec3 rA = contact.points[p] - refs[c].transformA->position;
                     glm::vec3 rB = contact.points[p] - refs[c].transformB->position;
@@ -500,7 +585,9 @@ namespace RT_PhysicsCore
                         + AngularEffectiveMassTerm(rA, contact.normal, refs[c].bodyA->invInertiaWorld)
                         + AngularEffectiveMassTerm(rB, contact.normal, refs[c].bodyB->invInertiaWorld);
                     if (K < kEpsilon)
+                    {
                         continue;
+                    }
 
                     glm::vec3 push = (correction / K) * contact.normal;
 
@@ -523,7 +610,9 @@ namespace RT_PhysicsCore
             {
                 double elapsedMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
                 if (elapsedMs >= positionTimeBudgetMs)
+                {
                     break;
+                }
             }
         }
     }

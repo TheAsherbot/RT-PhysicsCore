@@ -1,31 +1,48 @@
+/**
+ * @file ColliderComponent.h
+ * @brief Collision volume component defining shape geometry and local offset.
+ *
+ * Defines the geometric bounding representation used by broad-phase AABB generation
+ * and narrow-phase shape intersection tests.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>
 
 namespace RT_PhysicsCore
 {
+    /**
+     * @enum ColliderShape
+     * @brief Supported geometric primitive shapes for collision detection.
+     */
     enum class ColliderShape
     {
-        Box,
-        Sphere,
-        Capsule
+        Box,     ///< 3D oriented box defined by half-extents.
+        Sphere,  ///< Sphere defined by radius.
+        Capsule  ///< Cylinder capped with two hemispheres along the local +Y axis.
     };
 
-    // size's meaning depends on shape:
-    //   Box     - half-extents (x, y, z)
-    //   Sphere  - radius = size.x
-    //   Capsule - radius = size.x, half-length of the cylindrical section = size.y, axis = local +Y
+    /**
+     * @struct ColliderComponent
+     * @brief Geometric collision profile attached to an entity.
+     *
+     * The interpretation of the `size` vector depends on `shape`:
+     * - Box: half-extents (half-width, half-height, half-depth) along local X, Y, Z.
+     * - Sphere: radius = size.x.
+     * - Capsule: radius = size.x; half-length of cylindrical section = size.y; aligned with local +Y.
+     */
     struct ColliderComponent
     {
-        ColliderShape shape{ ColliderShape::Box };
-        glm::vec3 size{ 1.0f, 1.0f, 1.0f };
+        ColliderShape shape{ ColliderShape::Box };      ///< The geometric primitive shape type.
+        glm::vec3 size{ 1.0f, 1.0f, 1.0f };             ///< Shape dimension parameters.
 
-        // Collider center, in the entity's local space, relative to
-        // TransformComponent::position - 0 means centered on the entity
-        // like before. Lets a collision volume differ from what's
-        // rendered - e.g. a thin visual ground plane backed by a thicker
-        // slab extending downward, so its top surface still lines up with
-        // the visible surface instead of floating above it.
+        /**
+         * @brief Collider center in entity local space, relative to TransformComponent::position.
+         *
+         * Allows the physical collision volume to differ from the visual mesh (e.g., adding
+         * thickness below a thin visual ground plane to prevent tunneling while preserving surface alignment).
+         */
         glm::vec3 offset{ 0.0f, 0.0f, 0.0f };
     };
 }

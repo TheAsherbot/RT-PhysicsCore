@@ -1,3 +1,8 @@
+/**
+ * @file NarrowPhase.cpp
+ * @brief Implementation of exact geometric narrow-phase collision tests and contact generation.
+ */
+
 #include "RT-PhysicsCore/physics/collision/NarrowPhase.h"
 
 #include <cmath>
@@ -14,7 +19,9 @@ namespace RT_PhysicsCore
             glm::vec3 ab = b - a;
             float abLenSq = glm::dot(ab, ab);
             if (abLenSq < kEpsilon)
+            {
                 return a;
+            }
 
             float t = glm::clamp(glm::dot(p - a, ab) / abLenSq, 0.0f, 1.0f);
             return a + t * ab;
@@ -87,7 +94,9 @@ namespace RT_PhysicsCore
             float distSq = glm::dot(delta, delta);
             float radiusSum = radiusA + radiusB;
             if (distSq >= radiusSum * radiusSum)
+            {
                 return false;
+            }
 
             float dist = std::sqrt(distSq);
             glm::vec3 normal = (dist > kEpsilon) ? (delta / dist) : glm::vec3(0.0f, 1.0f, 0.0f);
@@ -132,7 +141,9 @@ namespace RT_PhysicsCore
                 glm::vec3 diff = local - clampedLocal; // box surface point -> sphere
                 float dist = glm::length(diff);
                 if (dist >= sphereRadius)
+                {
                     return false;
+                }
 
                 normalLocal = (dist > kEpsilon) ? -(diff / dist) : glm::vec3(1.0f, 0.0f, 0.0f);
                 closestLocal = clampedLocal;
@@ -188,7 +199,9 @@ namespace RT_PhysicsCore
                         {
                             glm::vec3 closestOnB = ClosestPointOnSegment(sample, bP0, bP1);
                             if (SphereSphere(sample, radiusA, closestOnB, radiusB, points[hits]))
+                            {
                                 ++hits;
+                            }
                         }
 
                         if (hits > 0)
@@ -231,7 +244,9 @@ namespace RT_PhysicsCore
             }
 
             if (!SphereBox(segPoint, capRadius, boxPos, boxRot, boxHalf, out))
+            {
                 return false;
+            }
             out.normal = -out.normal; // SphereBox gave capsule-point -> box
 
             // If the capsule's axis lies roughly in the contact plane
@@ -266,7 +281,9 @@ namespace RT_PhysicsCore
                         for (glm::vec3& sample : samples)
                         {
                             if (SphereBox(sample, capRadius, boxPos, boxRot, boxHalf, points[hits]))
+                            {
                                 ++hits;
+                            }
                         }
 
                         if (hits > 0)
@@ -326,7 +343,9 @@ namespace RT_PhysicsCore
 
                 bool currentInside = dCurrent <= 0.0f;
                 if (currentInside)
+                {
                     outPoly[outCount++] = current;
+                }
 
                 if (currentInside != (dNext <= 0.0f))
                 {
@@ -433,11 +452,15 @@ namespace RT_PhysicsCore
 
             glm::vec3 baseA = posA;
             for (int m = 0; m < 3; ++m)
+            {
                 if (m != axisA) baseA += rotA[m] * ((dLocalA[m] >= 0.0f) ? halfA[m] : -halfA[m]);
+            }
 
             glm::vec3 baseB = posB;
             for (int m = 0; m < 3; ++m)
+            {
                 if (m != axisB) baseB += rotB[m] * ((dLocalB[m] >= 0.0f) ? halfB[m] : -halfB[m]);
+            }
 
             glm::vec3 closestA, closestB;
             ClosestPointsSegmentSegment(baseA - rotA[axisA] * halfA[axisA], baseA + rotA[axisA] * halfA[axisA],
@@ -461,8 +484,12 @@ namespace RT_PhysicsCore
             for (int i = 0; i < 3; ++i) axes[3 + i] = rotB[i];
             int k = 6;
             for (int i = 0; i < 3; ++i)
+            {
                 for (int j = 0; j < 3; ++j)
+                {
                     axes[k++] = glm::cross(rotA[i], rotB[j]);
+                }
+            }
 
             float minOverlap = std::numeric_limits<float>::max();
             int minAxisIndex = -1;
@@ -473,7 +500,9 @@ namespace RT_PhysicsCore
                 float overlap;
                 glm::vec3 normalizedAxis;
                 if (!TestAxis(axes[i], centerDelta, rotA, halfA, rotB, halfB, overlap, normalizedAxis))
+                {
                     return false;
+                }
 
                 if (overlap < minOverlap)
                 {
@@ -484,7 +513,9 @@ namespace RT_PhysicsCore
             }
 
             if (glm::dot(minAxis, centerDelta) < 0.0f)
+            {
                 minAxis = -minAxis;
+            }
 
             out.normal = minAxis;
 
@@ -507,15 +538,22 @@ namespace RT_PhysicsCore
         out.pointCount = 0;
 
         if (a.shape == ColliderShape::Sphere && b.shape == ColliderShape::Sphere)
+        {
             return SphereSphere(a.position, a.size.x, b.position, b.size.x, out);
+        }
 
         if (a.shape == ColliderShape::Sphere && b.shape == ColliderShape::Box)
+        {
             return SphereBox(a.position, a.size.x, b.position, b.rotation, b.size, out);
+        }
 
         if (a.shape == ColliderShape::Box && b.shape == ColliderShape::Sphere)
         {
             bool hit = SphereBox(b.position, b.size.x, a.position, a.rotation, a.size, out);
-            if (hit) out.normal = -out.normal;
+            if (hit)
+            {
+                out.normal = -out.normal;
+            }
             return hit;
         }
 
@@ -531,7 +569,10 @@ namespace RT_PhysicsCore
             glm::vec3 capA = a.position - a.rotation[1] * a.size.y;
             glm::vec3 capB = a.position + a.rotation[1] * a.size.y;
             bool hit = SphereCapsule(b.position, b.size.x, capA, capB, a.size.x, out);
-            if (hit) out.normal = -out.normal;
+            if (hit)
+            {
+                out.normal = -out.normal;
+            }
             return hit;
         }
 
@@ -556,7 +597,10 @@ namespace RT_PhysicsCore
             glm::vec3 capA = a.position - a.rotation[1] * a.size.y;
             glm::vec3 capB = a.position + a.rotation[1] * a.size.y;
             bool hit = BoxCapsule(b.position, b.rotation, b.size, capA, capB, a.size.x, out);
-            if (hit) out.normal = -out.normal;
+            if (hit)
+            {
+                out.normal = -out.normal;
+            }
             return hit;
         }
 

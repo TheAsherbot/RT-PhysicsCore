@@ -1,41 +1,41 @@
+/**
+ * @file RigidBodyComponent.h
+ * @brief Full 6-DOF rigid body dynamics state component.
+ *
+ * Position and orientation remain on TransformComponent; this component holds
+ * mass properties, linear/angular momentum, and per-step accumulators.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>
 
 namespace RT_PhysicsCore
 {
-    // Full 6-DOF rigid body dynamics state. Position/orientation stay on
-    // TransformComponent - this only holds what that component doesn't:
-    // mass properties, momentum, and the per-step force/torque accumulators.
-    //
-    // Angular state is ANGULAR MOMENTUM, not angular velocity - world-space
-    // inertia rotates with the body, so momentum is what's actually
-    // conserved when torque is zero (angular velocity isn't, for any
-    // non-spherically-symmetric body - this is what makes asymmetric
-    // tumbling look physically correct). PhysicsSystem derives angular
-    // velocity from this each step.
-    //
-    // Plain data, matching every other component - build one via
-    // MassProperties.h's factory functions rather than by hand.
+    /**
+     * @struct RigidBodyComponent
+     * @brief 6-DOF physical state and momentum storage.
+     *
+     * Angular state is tracked via ANGULAR MOMENTUM rather than angular velocity.
+     * Because world-space inertia rotates with the body, momentum is what remains
+     * conserved under zero torque (producing physically correct intermediate-axis tumbling).
+     */
     struct RigidBodyComponent
     {
-        float mass{ 1.0f };
-        float invMass{ 1.0f };             // 0 = infinite mass (static/kinematic)
+        float mass{ 1.0f };                     ///< Total mass in kilograms.
+        float invMass{ 1.0f };                  ///< Inverse mass (0.0 = static/immovable).
 
-        glm::mat3 inertiaBody{ 1.0f };      // body-space, about center of mass
-        glm::mat3 invInertiaBody{ 1.0f };
+        glm::mat3 inertiaBody{ 1.0f };          ///< Principal body-space inertia tensor about center of mass.
+        glm::mat3 invInertiaBody{ 1.0f };       ///< Inverse body-space inertia tensor.
 
-        glm::vec3 velocity{ 0.0f, 0.0f, 0.0f };
-        glm::vec3 forceAccum{ 0.0f, 0.0f, 0.0f };    // cleared every FixedUpdate
+        glm::vec3 velocity{ 0.0f, 0.0f, 0.0f };     ///< Linear velocity in world space (m/s).
+        glm::vec3 forceAccum{ 0.0f, 0.0f, 0.0f };   ///< Accumulated world forces for current step (cleared each tick).
 
-        glm::vec3 angularMomentum{ 0.0f, 0.0f, 0.0f };
-        glm::vec3 torqueAccum{ 0.0f, 0.0f, 0.0f };   // cleared every FixedUpdate
+        glm::vec3 angularMomentum{ 0.0f, 0.0f, 0.0f }; ///< Angular momentum in world space (conserved quantity).
+        glm::vec3 torqueAccum{ 0.0f, 0.0f, 0.0f };     ///< Accumulated world torques for current step (cleared each tick).
 
-        // Cache, not fundamental state: PhysicsSystem recomputes both every
-        // FixedUpdate from angularMomentum and the current orientation.
-        // Static bodies never get touched (PhysicsSystem skips them), so
-        // these correctly stay zero for them by default.
-        glm::vec3 angularVelocity{ 0.0f, 0.0f, 0.0f };
-        glm::mat3 invInertiaWorld{ 0.0f };
+        // Cached quantities derived every FixedUpdate:
+        glm::vec3 angularVelocity{ 0.0f, 0.0f, 0.0f }; ///< Derived instantaneous angular velocity (rad/s).
+        glm::mat3 invInertiaWorld{ 0.0f };             ///< Derived world-space inverse inertia tensor (R * I^-1 * R^T).
     };
 }
