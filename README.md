@@ -120,7 +120,7 @@ cmake --build build --config Release
 │  Accumulator ──► FixedUpdate (0-N) ──► Update ──► Render  │
 └──────────┬────────────────┬─────────────────┬─────────────┘
            │                │                 │
-     ┌─────▼─────┐     ┌────▼────┐     ┌──────▼──────┐
+     ┌─────▼──────┐    ┌────▼────┐     ┌──────▼──────┐
      │  Physics   │    │Transform│     │   Render    │
      │  Pipeline  │    |  Prop.  │     │   System    │
      └─────┬──────┘    └─────────┘     └─────────────┘
