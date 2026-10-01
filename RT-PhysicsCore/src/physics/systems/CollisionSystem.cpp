@@ -6,7 +6,6 @@
 #include "RT-PhysicsCore/physics/collision/AABB.h"
 #include "RT-PhysicsCore/physics/collision/NarrowPhase.h"
 #include "RT-PhysicsCore/physics/PhysicsMaterial.h"
-#include "RT-PhysicsCore/utils/Log.h"
 
 #include <glm/gtc/quaternion.hpp>
 

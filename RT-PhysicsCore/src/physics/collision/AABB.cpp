@@ -1,8 +1,5 @@
 #include "RT-PhysicsCore/physics/collision/AABB.h"
 
-
-#include "RT-PhysicsCore/utils/Log.h"
-
 namespace RT_PhysicsCore
 {
     namespace
@@ -36,16 +33,14 @@ namespace RT_PhysicsCore
     {
         glm::mat3 r = glm::mat3_cast(rotation);
         glm::vec3 center = position + r * collider.offset;
-        RT_LOG_INFO("Collider stuff: " << (collider.offset * rotation).y);
-        RT_LOG_INFO("center: " << center.y);
 
         switch (collider.shape)
         {
-            case ColliderShape::Box:     return BoxAABB(collider.size, position, r);
-            case ColliderShape::Sphere:  return SphereAABB(collider.size.x, position);
-            case ColliderShape::Capsule: return CapsuleAABB(collider.size.x, collider.size.y, position, r);
+            case ColliderShape::Box:     return BoxAABB(collider.size, center, r);
+            case ColliderShape::Sphere:  return SphereAABB(collider.size.x, center);
+            case ColliderShape::Capsule: return CapsuleAABB(collider.size.x, collider.size.y, center, r);
         }
-        return { position, position };
+        return { center, center };
     }
 
     bool Overlaps(const AABB& a, const AABB& b)
