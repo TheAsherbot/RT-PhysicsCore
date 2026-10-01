@@ -1,3 +1,8 @@
+/**
+ * @file MassProperties.cpp
+ * @brief Implementation of inertia tensor formulas and body factory routines.
+ */
+
 #include "RT-PhysicsCore/physics/MassProperties.h"
 #include "RT-PhysicsCore/utils/Log.h"
 

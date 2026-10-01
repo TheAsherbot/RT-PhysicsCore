@@ -1,3 +1,8 @@
+/**
+ * @file PhysicsMaterial.cpp
+ * @brief Implementation of material property lookup tables and combination heuristics.
+ */
+
 #include "RT-PhysicsCore/physics/PhysicsMaterial.h"
 
 #include <cmath>
@@ -12,7 +17,10 @@ namespace RT_PhysicsCore
         {
             switch (id)
             {
-                case MaterialId::Default: return { 0.3f, 0.6f, 0.4f };
+                case MaterialId::Default:
+                {
+                    return { 0.3f, 0.6f, 0.4f };
+                }
             }
             return { 0.3f, 0.6f, 0.4f };
         }
@@ -41,7 +49,9 @@ namespace RT_PhysicsCore
         const auto& table = PairTable();
         auto it = table.find(key);
         if (it != table.end())
+        {
             return it->second;
+        }
 
         MaterialProperties pa = SoloProperties(a);
         MaterialProperties pb = SoloProperties(b);

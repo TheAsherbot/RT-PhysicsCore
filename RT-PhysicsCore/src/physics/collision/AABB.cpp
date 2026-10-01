@@ -1,3 +1,8 @@
+/**
+ * @file AABB.cpp
+ * @brief Implementation of world-space AABB calculation routines and overlap tests.
+ */
+
 #include "RT-PhysicsCore/physics/collision/AABB.h"
 
 namespace RT_PhysicsCore
@@ -7,8 +12,8 @@ namespace RT_PhysicsCore
         AABB BoxAABB(const glm::vec3& halfExtents, const glm::vec3& position, const glm::mat3& rotation)
         {
             glm::vec3 extent = glm::abs(rotation[0]) * halfExtents.x
-                              + glm::abs(rotation[1]) * halfExtents.y
-                              + glm::abs(rotation[2]) * halfExtents.z;
+                + glm::abs(rotation[1]) * halfExtents.y
+                + glm::abs(rotation[2]) * halfExtents.z;
             return { position - extent, position + extent };
         }
 
@@ -36,9 +41,9 @@ namespace RT_PhysicsCore
 
         switch (collider.shape)
         {
-            case ColliderShape::Box:     return BoxAABB(collider.size, center, r);
-            case ColliderShape::Sphere:  return SphereAABB(collider.size.x, center);
-            case ColliderShape::Capsule: return CapsuleAABB(collider.size.x, collider.size.y, center, r);
+        case ColliderShape::Box:     return BoxAABB(collider.size, center, r);
+        case ColliderShape::Sphere:  return SphereAABB(collider.size.x, center);
+        case ColliderShape::Capsule: return CapsuleAABB(collider.size.x, collider.size.y, center, r);
         }
         return { center, center };
     }

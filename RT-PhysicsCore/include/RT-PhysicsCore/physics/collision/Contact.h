@@ -1,3 +1,11 @@
+/**
+ * @file Contact.h
+ * @brief Collision manifold and contact point structures.
+ *
+ * Encapsulates contact manifold geometry between two colliding entities, including
+ * normal direction, manifold points, penetration depths, and cached interaction parameters.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>
@@ -5,27 +13,32 @@
 
 namespace RT_PhysicsCore
 {
-    constexpr int kMaxContactPoints = 8; // box-box face clipping can produce up to this many
+    /**
+     * @brief Maximum number of contact points supported per collision manifold.
+     * @note Polygon face clipping during box-box collisions can produce up to 8 vertices.
+     */
+    constexpr int kMaxContactPoints = 8;
 
-    // normal points from a toward b. Multiple points (from box-box face
-    // clipping) are what let a box rest flat without rocking - a single
-    // point can't resist torque. Each point has its own penetration depth,
-    // since incident and reference faces aren't always exactly parallel.
+    /**
+     * @struct Contact
+     * @brief Manifold representing physical contact between two colliding entities.
+     *
+     * The normal points directed from entity `a` toward entity `b`. Multiple points
+     * allow planar resting contacts (such as a box on a plane) to resist rotational torques.
+     */
     struct Contact
     {
-        Entity a{};
-        Entity b{};
+        Entity a{}; ///< First entity involved in the collision.
+        Entity b{}; ///< Second entity involved in the collision.
 
-        glm::vec3 normal{ 0.0f, 1.0f, 0.0f };
-        glm::vec3 points[kMaxContactPoints]{};
-        float penetrations[kMaxContactPoints]{};
-        int pointCount{ 0 };
+        glm::vec3 normal{ 0.0f, 1.0f, 0.0f };               ///< Unit normal pointing from entity a to entity b.
+        glm::vec3 points[kMaxContactPoints]{};               ///< World-space contact positions.
+        float penetrations[kMaxContactPoints]{};            ///< Penetration depth at each contact point (positive).
+        int pointCount{ 0 };                                ///< Number of active contact points in the manifold [0, 8].
 
-        // Combined pair values (see PhysicsMaterial.h) - computed once
-        // when CollisionSystem builds this contact, not re-derived by
-        // ResolutionSystem every iteration.
-        float restitution{ 0.0f };
-        float staticFriction{ 0.0f };
-        float kineticFriction{ 0.0f };
+        // Combined material properties pre-calculated once during collision detection
+        float restitution{ 0.0f };                          ///< Effective coefficient of restitution for this contact.
+        float staticFriction{ 0.0f };                       ///< Effective coefficient of static friction.
+        float kineticFriction{ 0.0f };                      ///< Effective coefficient of kinetic friction.
     };
 }

@@ -1,3 +1,8 @@
+/**
+ * @file LCPSolver.cpp
+ * @brief Implementation of Lemke's algorithm for the contact Linear Complementarity Problem.
+ */
+
 #include "RT-PhysicsCore/physics/LCPSolver.h"
 
 #include <cmath>
@@ -20,31 +25,43 @@ namespace RT_PhysicsCore
 
             double pivotVal = tableau[row][col];
             for (int j = 0; j < cols; ++j)
+            {
                 tableau[row][j] /= pivotVal;
+            }
 
             for (int i = 0; i < rows; ++i)
             {
                 if (i == row)
+                {
                     continue;
+                }
                 double factor = tableau[i][col];
                 if (std::abs(factor) < kLcpEpsilon)
+                {
                     continue;
+                }
                 for (int j = 0; j < cols; ++j)
+                {
                     tableau[i][j] -= factor * tableau[row][j];
+                }
             }
         }
     }
 
     bool SolveLCPLemke(const std::vector<std::vector<float>>& M, const std::vector<float>& q,
-                        std::vector<float>& z, int maxPivots)
+        std::vector<float>& z, int maxPivots)
     {
         int n = static_cast<int>(q.size());
         z.assign(n, 0.0f);
         if (n == 0)
+        {
             return true;
+        }
 
         if (maxPivots <= 0)
+        {
             maxPivots = 4 * n + 50;
+        }
 
         // Columns: [0..n) = w_i, [n..2n) = z_i, 2n = the artificial Lemke
         // variable (z0), 2n+1 = rhs. Tableau row i is the equation
@@ -61,7 +78,9 @@ namespace RT_PhysicsCore
         {
             tableau[i][wCol0 + i] = 1.0;
             for (int j = 0; j < n; ++j)
+            {
                 tableau[i][zCol0 + j] = -static_cast<double>(M[i][j]);
+            }
             tableau[i][artCol] = -1.0;
             tableau[i][rhsCol] = static_cast<double>(q[i]);
             basis[i] = wCol0 + i;
@@ -70,10 +89,16 @@ namespace RT_PhysicsCore
         // Trivial case: q already feasible, z = 0 solves it.
         int r = 0;
         for (int i = 1; i < n; ++i)
+        {
             if (tableau[i][rhsCol] < tableau[r][rhsCol])
+            {
                 r = i;
+            }
+        }
         if (tableau[r][rhsCol] >= -kLcpEpsilon)
+        {
             return true;
+        }
 
         // Initial pivot brings the artificial variable into row r.
         Pivot(tableau, r, artCol);
@@ -90,7 +115,9 @@ namespace RT_PhysicsCore
             {
                 double coeff = tableau[i][drivingCol];
                 if (coeff <= kLcpEpsilon)
+                {
                     continue;
+                }
 
                 double ratio = tableau[i][rhsCol] / coeff;
                 bool better = (enterRow == -1) || (ratio < bestRatio - kLcpEpsilon);
@@ -114,24 +141,34 @@ namespace RT_PhysicsCore
             }
 
             if (enterRow == -1)
+            {
                 return false; // ray termination - no solution found via this path
+            }
 
             int leavingBasisVar = basis[enterRow];
             Pivot(tableau, enterRow, drivingCol);
             basis[enterRow] = drivingCol;
 
             if (leavingBasisVar == artCol)
+            {
                 break; // z0 left the basis - solution found
+            }
 
             drivingCol = (leavingBasisVar < zCol0) ? (zCol0 + leavingBasisVar) : (leavingBasisVar - zCol0);
 
             if (iter == maxPivots - 1)
+            {
                 return false; // pivot cap reached without z0 leaving
+            }
         }
 
         for (int i = 0; i < n; ++i)
+        {
             if (basis[i] >= zCol0 && basis[i] < artCol)
+            {
                 z[basis[i] - zCol0] = static_cast<float>(tableau[i][rhsCol]);
+            }
+        }
 
         return true;
     }
