@@ -2,13 +2,16 @@
 
 # file(GLOB SRC_FILES *.cpp *.h)
 
-
 add_subdirectory(core)
 add_subdirectory(utils)
 add_subdirectory(physics)
 add_subdirectory(rendering)
+add_subdirectory(telemetry)
 
 add_library(RT_PhysicsEngine STATIC ${SRC_FILES})
+if (RT_FORCE_PROFILING)
+    target_compile_definitions(RT_PhysicsEngine PUBLIC RT_FORCE_PROFILING=1)
+endif()
 
 target_include_directories(RT_PhysicsEngine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(RT_PhysicsEngine PUBLIC ${CMAKE_SOURCE_DIR}/RT-PhysicsCore/include)

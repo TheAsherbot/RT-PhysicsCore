@@ -4,6 +4,9 @@
  */
 
 #include <memory>
+#include <GLFW/glfw3.h>
+
+#include "RT-PhysicsCore/telemetry/TelemetryManager.h"
 
 #include "RT-PhysicsCore/core/Engine.h"
 #include "RT-PhysicsCore/utils/Log.h"
@@ -26,6 +29,8 @@
 
 int main()
 {
+    RT_PhysicsCore::TelemetryManager::Get().Initialize();
+
     // Optional: persist this run's log to a file in addition to the console sink
     RT_PhysicsCore::Log::AddSink(
         std::make_unique<RT_PhysicsCore::FileLogSink>(RT_PhysicsCore::DefaultLogFilePath()));
@@ -119,7 +124,7 @@ int main()
             scene.SetDeltaTime(deltaTime);
             scene.UpdateSystems();
 
-            if (renderer.ShouldClose())
+            if (renderer.ShouldClose() || renderer.GetInput().WasKeyPressed(GLFW_KEY_ESCAPE))
             {
                 engine.RequestExit();
             }
@@ -133,6 +138,8 @@ int main()
 
     RT_LOG_INFO("START!");
     engine.Run();
+
+    RT_PhysicsCore::TelemetryManager::Get().Shutdown();
 
     return 0;
 }

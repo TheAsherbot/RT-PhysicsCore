@@ -3,9 +3,13 @@
  * @brief Implementation of the main Engine coordinator and execution loop.
  */
 
+
 #include "RT-PhysicsCore/core/Engine.h"
 #include "utils/FixedTimestep.h"
+
 #include "RT-PhysicsCore/utils/Log.h"
+
+#include "RT-PhysicsCore/telemetry/TelemetryManager.h"
 
 #include <chrono>
 
@@ -49,40 +53,64 @@ namespace RT_PhysicsCore
 
         while (isRunning)
         {
+            RT_PROFILE_SCOPE("Frame");
+
+            auto frameStart = std::chrono::high_resolution_clock::now();
+
             std::uint32_t steps = fixedTimestep->Step();
             double fixedDeltaTime = fixedTimestep->FixedDeltaSeconds();
             double deltaTime = fixedTimestep->DeltaSeconds();
 
-            for (std::uint32_t i = 0; i < steps; i++)
+            double physicsMs = 0.0;
             {
-                auto stepStart = std::chrono::high_resolution_clock::now();
+                RT_PROFILE_SCOPE("FixedUpdate");
+                auto physicsStart = std::chrono::high_resolution_clock::now();
 
-                if (fixedUpdateCallback)
+                for (std::uint32_t i = 0; i < steps; i++)
                 {
-                    fixedUpdateCallback(fixedDeltaTime);
+                    if (fixedUpdateCallback)
+                    {
+                        fixedUpdateCallback(fixedDeltaTime);
+                    }
                 }
 
-                auto stepEnd = std::chrono::high_resolution_clock::now();
-
-                double stepMicros =
-                    std::chrono::duration<double, std::micro>(stepEnd - stepStart).count();
-
-                RT_LOG_INFO("Fixed step " << i << " took " << stepMicros << " us");
+                auto physicsEnd = std::chrono::high_resolution_clock::now();
+                physicsMs = std::chrono::duration<double, std::milli>(physicsEnd - physicsStart).count();
             }
 
-            // Normal update must run before render: RenderSystem reads
-            // WorldTransformComponent, which TransformPropagationSystem
-            // recomputes during the normal update callback.
-            if (updateCallback)
+            double updateMs = 0.0;
             {
-                updateCallback(deltaTime);
+                RT_PROFILE_SCOPE("Update");
+                auto updateStart = std::chrono::high_resolution_clock::now();
+
+                if (updateCallback)
+                {
+                    updateCallback(deltaTime);
+                }
+
+                auto updateEnd = std::chrono::high_resolution_clock::now();
+                updateMs = std::chrono::duration<double, std::milli>(updateEnd - updateStart).count();
             }
 
             double alpha = fixedTimestep->Alpha();
-            if (renderCallback)
+            double renderMs = 0.0;
             {
-                renderCallback(alpha);
+                RT_PROFILE_SCOPE("Render");
+                auto renderStart = std::chrono::high_resolution_clock::now();
+
+                if (renderCallback)
+                {
+                    renderCallback(alpha);
+                }
+
+                auto renderEnd = std::chrono::high_resolution_clock::now();
+                renderMs = std::chrono::duration<double, std::milli>(renderEnd - renderStart).count();
             }
+
+            auto frameEnd = std::chrono::high_resolution_clock::now();
+            double totalFrameMs = std::chrono::duration<double, std::milli>(frameEnd - frameStart).count();
+
+            TelemetryManager::Get().PushFrameSummary({ totalFrameMs, physicsMs, updateMs, renderMs });
         }
 
         RT_LOG_INFO("Engine loop stopped");

@@ -10,6 +10,8 @@
 
 #include <functional>
 
+#include "RT-PhysicsCore/telemetry/TelemetryMacros.h"
+
 namespace RT_PhysicsCore
 {
     class FixedTimestep;
