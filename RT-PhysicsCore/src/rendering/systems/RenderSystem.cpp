@@ -17,8 +17,6 @@ namespace RT_PhysicsCore
 
     void RenderSystem::RenderUpdate()
     {
-        renderer.BeginFrame();
-
         auto entities = scene.Query<MeshComponent, WorldTransformComponent>();
         for (Entity e : entities)
         {
@@ -33,6 +31,5 @@ namespace RT_PhysicsCore
         }
 
         renderer.FlushDebugDraw();
-        renderer.EndFrame();
     }
 }

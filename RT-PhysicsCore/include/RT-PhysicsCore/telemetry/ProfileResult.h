@@ -28,6 +28,10 @@ namespace RT_PhysicsCore
 
         /// @brief Identifier of the execution thread that processed the scope.
         uint32_t threadId;
+
+        std::size_t memoryCurrentBytes = 0;
+        std::size_t memoryPeakBytes = 0;
+        std::size_t memoryAllocations = 0;
     };
 
     /**

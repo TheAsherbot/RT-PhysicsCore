@@ -12,8 +12,11 @@
 #include "RT-PhysicsCore/rendering/Camera.h"
 #include "RT-PhysicsCore/rendering/Input.h"
 
+struct GLFWwindow;
+
 namespace RT_PhysicsCore
 {
+
     struct MeshComponent;
     struct WorldTransformComponent;
 
@@ -91,6 +94,18 @@ namespace RT_PhysicsCore
          * @return Reference to Input.
          */
         Input& GetInput();
+
+        /**
+         * @brief Retrieves the active underlying GLFW window handle.
+         * @return Pointer to the GLFWwindow instance.
+         */
+        GLFWwindow* GetWindow();
+
+        /**
+         * @brief Retrieves the active underlying GLFW window handle.
+         * @return Const pointer to the GLFWwindow instance.
+         */
+        const GLFWwindow* GetWindow() const;
 
         /**
          * @brief Provides read-only access to the window Input subsystem.

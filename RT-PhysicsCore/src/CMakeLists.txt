@@ -18,8 +18,6 @@ target_include_directories(RT_PhysicsEngine PUBLIC ${CMAKE_SOURCE_DIR}/RT-Physic
 target_include_directories(RT_PhysicsEngine PUBLIC ${CMAKE_SOURCE_DIR}/RT-PhysicsCore/external/glad/include)
 
 
-# target_link_libraries(RT_PhysicsEngine PRIVATE glfw)
-
 include(FetchContent)
 
 FetchContent_Declare(
@@ -52,3 +50,5 @@ FetchContent_MakeAvailable(glfw)
 
 # Link GLFW
 target_link_libraries(RT_PhysicsEngine PUBLIC glfw)
+# Link ImGui
+target_link_libraries(RT_PhysicsEngine PUBLIC imgui)

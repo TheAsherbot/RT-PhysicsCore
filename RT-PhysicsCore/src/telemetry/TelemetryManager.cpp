@@ -115,6 +115,15 @@ namespace RT_PhysicsCore
         outputStream << "\"pid\":0,";
         outputStream << "\"tid\":" << result.threadId << ",";
         outputStream << "\"ts\":" << result.startTimestamp;
+
+        // Embed memory data if it exists
+        if (result.memoryCurrentBytes > 0 || result.memoryPeakBytes > 0)
+        {
+            outputStream << ",\"memory_current\":" << result.memoryCurrentBytes;
+            outputStream << ",\"memory_peak\":" << result.memoryPeakBytes;
+            outputStream << ",\"memory_allocs\":" << result.memoryAllocations;
+        }
+
         outputStream << "}";
 
         outputStream.flush();

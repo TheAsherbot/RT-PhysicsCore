@@ -13,6 +13,10 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+#include <imgui/imgui.h>
+#include <imgui/backend/imgui_impl_glfw.h>
+#include <imgui/backend/imgui_impl_opengl3.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -322,6 +326,12 @@ void main()
         impl->lastFrameTime = glfwGetTime();
         impl->valid = true;
 
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+        ImGui_ImplGlfw_InitForOpenGL(impl->window, true);
+        ImGui_ImplOpenGL3_Init("#version 330 core");
+
         RT_LOG_INFO("Renderer initialized: " << width << "x" << height << " '" << title << "'");
     }
 
@@ -329,6 +339,11 @@ void main()
     {
         if (impl && impl->valid)
         {
+            
+            ImGui_ImplOpenGL3_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+
             glDeleteProgram(impl->meshProgram);
             glDeleteProgram(impl->debugLineProgram);
             for (auto& [shape, mesh] : impl->primitives)
@@ -375,6 +390,10 @@ void main()
 
         glClearColor(0.08f, 0.08f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
     }
 
     void Renderer::DrawMesh(const MeshComponent& mesh, const WorldTransformComponent& worldTransform)
@@ -469,6 +488,10 @@ void main()
         {
             return;
         }
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(impl->window);
     }
 
@@ -490,5 +513,15 @@ void main()
     const Input& Renderer::GetInput() const
     {
         return impl->input;
+    }
+
+    GLFWwindow* Renderer::GetWindow()
+    {
+        return impl ? impl->window : nullptr;
+    }
+
+    const GLFWwindow* Renderer::GetWindow() const
+    {
+        return impl ? impl->window : nullptr;
     }
 }

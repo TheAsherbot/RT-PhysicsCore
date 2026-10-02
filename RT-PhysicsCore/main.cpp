@@ -6,7 +6,9 @@
 #include <memory>
 #include <GLFW/glfw3.h>
 
+#include "RT-PhysicsCore/telemetry/TelemetryOverlay.h" 
 #include "RT-PhysicsCore/telemetry/TelemetryManager.h"
+#include "RT-PhysicsCore/telemetry/ProfilerWindow.h"
 
 #include "RT-PhysicsCore/core/Engine.h"
 #include "RT-PhysicsCore/utils/Log.h"
@@ -30,6 +32,10 @@
 int main()
 {
     RT_PhysicsCore::TelemetryManager::Get().Initialize();
+    RT_PhysicsCore::TelemetryManager::Get().SetMode(RT_PhysicsCore::TelemetryMode::Minimal);
+
+    RT_PhysicsCore::TelemetryOverlay overlay;
+    RT_PhysicsCore::ProfilerWindow profilerWindow;
 
     // Optional: persist this run's log to a file in addition to the console sink
     RT_PhysicsCore::Log::AddSink(
@@ -116,16 +122,47 @@ int main()
 
     engine.SetRenderCallback([&](double /*alpha*/)
         {
+            renderer.BeginFrame();
+
             scene.RenderUpdateSystems();
+            overlay.Render();
+
+            renderer.EndFrame();
+
+            // Render the profiler in its own window (only does work if open)
+            profilerWindow.Render(renderer.GetWindow());
         });
 
     engine.SetUpdateCallback([&](double deltaTime)
         {
             scene.SetDeltaTime(deltaTime);
             scene.UpdateSystems();
-
+            // F3 cycles: Off -> Minimal -> Full -> Off
+            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F3))
+            {
+                auto& tm = RT_PhysicsCore::TelemetryManager::Get();
+                RT_PhysicsCore::TelemetryMode current = tm.GetMode();
+                if (current == RT_PhysicsCore::TelemetryMode::Off)
+                {
+                    tm.SetMode(RT_PhysicsCore::TelemetryMode::Minimal);
+                }
+                else if (current == RT_PhysicsCore::TelemetryMode::Minimal)
+                {
+                    tm.SetMode(RT_PhysicsCore::TelemetryMode::Full);
+                    if (!profilerWindow.IsOpen())
+                    {
+                        profilerWindow.Open(renderer.GetWindow());
+                    }
+                }
+                else
+                {
+                    profilerWindow.Close(renderer.GetWindow());
+                    tm.SetMode(RT_PhysicsCore::TelemetryMode::Off);
+                }
+            }
             if (renderer.ShouldClose() || renderer.GetInput().WasKeyPressed(GLFW_KEY_ESCAPE))
             {
+                profilerWindow.Close(renderer.GetWindow());
                 engine.RequestExit();
             }
         });
@@ -139,6 +176,7 @@ int main()
     RT_LOG_INFO("START!");
     engine.Run();
 
+    profilerWindow.Close(renderer.GetWindow());
     RT_PhysicsCore::TelemetryManager::Get().Shutdown();
 
     return 0;
