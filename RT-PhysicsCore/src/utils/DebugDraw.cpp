@@ -103,6 +103,49 @@ namespace RT_PhysicsCore
         ring(2);
     }
 
+    void DebugDraw::Cylinder(const glm::vec3& center, float radius, float halfHeight, const glm::vec3& color, int segments, bool depthTest)
+    {
+        if (segments < 3)
+        {
+            segments = 3;
+        }
+
+        const float topY = center.y + halfHeight;
+        const float bottomY = center.y - halfHeight;
+
+        // --- Top and bottom rings ---
+        for (int circle = 0; circle < 2; ++circle)
+        {
+            float y = (circle == 0) ? topY : bottomY;
+
+            for (int i = 0; i < segments; ++i)
+            {
+                float a0 = (2.0f * kPi * i) / segments;
+                float a1 = (2.0f * kPi * (i + 1)) / segments;
+
+                glm::vec3 p0 = { std::cos(a0) * radius, y, std::sin(a0) * radius };
+                glm::vec3 p1 = { std::cos(a1) * radius, y, std::sin(a1) * radius };
+
+                Line(center + p0, center + p1, color, depthTest);
+            }
+        }
+
+        // --- Vertical lines (4 cardinal directions) ---
+        for (int i = 0; i < 4; ++i)
+        {
+            float angle = (2.0f * kPi * i) / 4.0f;
+
+            float cx = std::cos(angle) * radius;
+            float cz = std::sin(angle) * radius;
+
+            glm::vec3 top = { center.x + cx, topY, center.z + cz };
+            glm::vec3 bottom = { center.x + cx, bottomY, center.z + cz };
+
+            Line(top, bottom, color, depthTest);
+        }
+    }
+
+
     DebugDrawData DebugDraw::TakeLines()
     {
         DebugDrawData result;

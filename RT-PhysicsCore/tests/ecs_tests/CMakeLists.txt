@@ -1,0 +1,4 @@
+﻿# RT-PhysicsCore\tests\ecs_tests\CMakeLists.txt
+
+add_executable(ECSTests_TransformHierarchy TransformHierarchyTest.cpp)
+target_link_libraries(ECSTests_TransformHierarchy PRIVATE glad RT_PhysicsEngine)

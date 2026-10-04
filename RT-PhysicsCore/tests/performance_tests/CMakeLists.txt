@@ -1,0 +1,19 @@
+﻿# RT-PhysicsCore\tests\performance_tests\CMakeLists.txt
+
+add_executable(PerformanceTests_BroadphaseScaling BroadphaseScalingTest.cpp)
+target_link_libraries(PerformanceTests_BroadphaseScaling PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PerformanceTests_NarrowPhaseThroughput NarrowPhaseThroughputTest.cpp)
+target_link_libraries(PerformanceTests_NarrowPhaseThroughput PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PerformanceTests_SolverScaling SolverScalingTest.cpp)
+target_link_libraries(PerformanceTests_SolverScaling PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PerformanceTests_PileStress PileStressTest.cpp)
+target_link_libraries(PerformanceTests_PileStress PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PerformanceTests_ECSChurn ECSChurnTest.cpp)
+target_link_libraries(PerformanceTests_ECSChurn PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PerformanceTests_AdaptiveIteration AdaptiveIterationTest.cpp)
+target_link_libraries(PerformanceTests_AdaptiveIteration PRIVATE glad RT_PhysicsEngine)

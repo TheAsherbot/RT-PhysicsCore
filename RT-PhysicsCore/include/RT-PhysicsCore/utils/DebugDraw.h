@@ -69,6 +69,17 @@ namespace RT_PhysicsCore
         static void Sphere(const glm::vec3& center, float radius, const glm::vec3& color, int segments = 16, bool depthTest = true);
 
         /**
+         * @brief Queues a wireframe cylinder drawn as a series of circular rings and vertical lines.
+         * @param center World-space center point.
+         * @param radius Cylinder radius.
+         * @param halfHeight Half-height along the Y-axis.
+         * @param color Wireframe RGB color.
+         * @param segments Vertex resolution per circle ring (default: 16).
+         * @param depthTest True if occluded by depth buffer; false for overlay rendering.
+         */
+        static void Cylinder(const glm::vec3& center, float radius, float halfHeight, const glm::vec3& color, int segments = 16, bool depthTest = true);
+
+        /**
          * @brief Drains and clears all queued debug lines for GPU submission.
          * @note Dedicated to Renderer only; calling elsewhere steals line data.
          * @return Populated DebugDrawData structure containing accumulated segments.

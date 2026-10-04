@@ -5,6 +5,8 @@
 
 #include "RT-PhysicsCore/physics/LCPSolver.h"
 
+#include "RT-PhysicsCore/utils/Log.h" // REMOVE ASAP
+
 #include <cmath>
 
 namespace RT_PhysicsCore
@@ -142,6 +144,7 @@ namespace RT_PhysicsCore
 
             if (enterRow == -1)
             {
+                RT_LOG_WARN("LCP Lemke: ray termination - no solution found via this path");
                 return false; // ray termination - no solution found via this path
             }
 
@@ -158,6 +161,7 @@ namespace RT_PhysicsCore
 
             if (iter == maxPivots - 1)
             {
+				RT_LOG_WARN("LCP Lemke: pivot cap reached without z0 leaving - no solution found via this path");
                 return false; // pivot cap reached without z0 leaving
             }
         }

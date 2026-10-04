@@ -1,7 +1,28 @@
-﻿# RT-PhysicsCore\tests\physics_tests\CMakeLists.txt		
+﻿# RT-PhysicsCore\tests\physics_tests\CMakeLists.txt
 
-add_executable (PhysicsTests_Collision CollisionTest.cpp)
-target_link_libraries(PhysicsTests_Collision PRIVATE glad)
-target_link_libraries(PhysicsTests_Collision PRIVATE RT_PhysicsEngine)
-target_include_directories(RT_PhysicsEngine PUBLIC ${CMAKE_SOURCE_DIR}/RT-PhysicsCore/include)
-# add_subdirectory(examples)
+add_executable(PhysicsTests_Collision CollisionTest.cpp)
+target_link_libraries(PhysicsTests_Collision PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_SolverComparison SolverComparisonTest.cpp)
+target_link_libraries(PhysicsTests_SolverComparison PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_Integration IntegrationTest.cpp)
+target_link_libraries(PhysicsTests_Integration PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_AABB AABBBroadphaseTest.cpp)
+target_link_libraries(PhysicsTests_AABB PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_MassProperties MassPropertiesTest.cpp)
+target_link_libraries(PhysicsTests_MassProperties PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_SolverStability SolverStabilityTest.cpp)
+target_link_libraries(PhysicsTests_SolverStability PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_Restitution RestitutionTest.cpp)
+target_link_libraries(PhysicsTests_Restitution PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_Friction FrictionTest.cpp)
+target_link_libraries(PhysicsTests_Friction PRIVATE glad RT_PhysicsEngine)
+
+add_executable(PhysicsTests_PositionCorrection PositionCorrectionTest.cpp)
+target_link_libraries(PhysicsTests_PositionCorrection PRIVATE glad RT_PhysicsEngine)
