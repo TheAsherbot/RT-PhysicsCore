@@ -21,9 +21,39 @@ namespace RT_PhysicsCore
                 {
                     return { 0.3f, 0.6f, 0.4f };
                 }
+                case MaterialId::Clay:
+                {
+                    return { 0.0f, 0.8f, 0.6f };
+                }
+                case MaterialId::Wood:
+                {
+                    return { 0.25f, 0.5f, 0.4f };
+                }
+                case MaterialId::Rubber:
+                {
+                    return { 0.5f, 0.8f, 0.6f };
+                }
+                case MaterialId::HardRubber:
+                {
+                    return { 0.75f, 0.8f, 0.6f };
+                }
+                case MaterialId::SuperBall:
+                {
+                    return { 1.0f, 0.6f, 0.4f };
+                }
+                case MaterialId::BouncyIce:
+                {
+                    return { 1.0f, 0.0f, 0.0f };
+                }
+                case MaterialId::Domino:
+                {
+                    return { 0.1f, 0.8f, 0.6f };
+                }
             }
+
             return { 0.3f, 0.6f, 0.4f };
         }
+
 
         // Explicit overrides for specific pairs - add entries here rather
         // than trusting the geometric/arithmetic-mean fallback wherever

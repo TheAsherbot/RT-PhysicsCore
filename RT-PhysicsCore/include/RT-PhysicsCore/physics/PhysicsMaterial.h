@@ -16,7 +16,14 @@ namespace RT_PhysicsCore
      */
     enum class MaterialId
     {
-        Default, ///< Default generic material.
+        Default,     ///< Default generic material (e=0.3, mu=0.6).
+        Clay,        ///< Heavy, no bounce (e=0.0).
+        Wood,        ///< Slight bounce (e=0.25).
+        Rubber,      ///< Bouncy (e=0.5).
+        HardRubber,  ///< Very bouncy (e=0.75).
+        SuperBall,   ///< Perfect bounce (e=1.0).
+        BouncyIce,   ///< Perfect bounce, zero friction (e=1.0, mu=0.0) for Newton's Cradle.
+        Domino       ///< High friction, low bounce for stable chaining.
     };
 
     /**
