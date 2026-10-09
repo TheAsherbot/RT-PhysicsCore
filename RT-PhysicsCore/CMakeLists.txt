@@ -1,5 +1,6 @@
 ﻿# RT-PhysicsCore\CMakeLists.txt		
 
+add_subdirectory(examples)
 add_subdirectory(external)
 add_subdirectory(src)
 add_subdirectory(tests/)
