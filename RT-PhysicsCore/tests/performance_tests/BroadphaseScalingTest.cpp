@@ -91,7 +91,7 @@ int main()
     RT_LOG_INFO("Broadphase Scaling Test harness starting.");
     RT_LOG_INFO("=== Broadphase Scaling ===");
 
-    std::vector<int> tiers = { 50, 100, 250, 500, 1000, 2000 };
+    std::vector<int> tiers = { 50, 100, 250, 500, 1000, 2000, 5000, 10000 };
     for (int count : tiers)
     {
         RunTier(count);

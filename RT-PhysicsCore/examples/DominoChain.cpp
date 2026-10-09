@@ -37,7 +37,7 @@ int main()
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
     scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
     auto colSys = std::make_unique<CollisionSystem>(scene);
-    scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSys, ResolutionSystem::SolverMode::Exact));
+    scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSys, ResolutionSystem::SolverMode::SequentialImpulses));
     scene.AddSystem(std::move(colSys));
     scene.AddSystem(std::make_unique<RenderSystem>(scene, renderer));
 

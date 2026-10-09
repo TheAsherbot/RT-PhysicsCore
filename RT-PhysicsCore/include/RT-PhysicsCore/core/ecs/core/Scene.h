@@ -31,7 +31,7 @@ namespace RT_PhysicsCore
         /**
          * @brief Constructs an empty scene with no entities or systems.
          */
-        Scene() = default;
+        Scene();
 
         /**
          * @brief Destructor. Defined out-of-line in Scene.cpp to allow forward declaration of ISystem.

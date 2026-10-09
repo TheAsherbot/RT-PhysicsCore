@@ -63,10 +63,10 @@ int main()
         };
 
     makeWall({ 0, -0.5f, 0 }, { 8.0f, 0.5f, 8.0f }); // floor
-    makeWall({ 0, 4.0f, -8.5f }, { 8.0f, 4.0f, 0.5f }); // back
-    makeWall({ 0, 4.0f, 8.5f }, { 8.0f, 4.0f, 0.5f }); // front
-    makeWall({ -8.5f, 4.0f, 0 }, { 0.5f, 4.0f, 8.0f }); // left
-    makeWall({ 8.5f, 4.0f, 0 }, { 0.5f, 4.0f, 8.0f }); // right
+    makeWall({ 0, 4.0f, -8.5f }, { 8.0f, 8.0f, 0.5f }); // back
+    makeWall({ 0, 4.0f, 8.5f }, { 8.0f, 8.0f, 0.5f }); // front
+    makeWall({ -8.5f, 4.0f, 0 }, { 0.5f, 8.0f, 8.0f }); // left
+    makeWall({ 8.5f, 4.0f, 0 }, { 0.5f, 8.0f, 8.0f }); // right
 
     std::mt19937 rng(1337);
     std::uniform_real_distribution<float> posDist(-6.0f, 6.0f);

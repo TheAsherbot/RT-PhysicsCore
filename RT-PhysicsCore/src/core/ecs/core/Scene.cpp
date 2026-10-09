@@ -10,6 +10,11 @@
 
 namespace RT_PhysicsCore
 {
+    // Defined here for the same reason as the destructor: the constructor can
+    // instantiate std::vector of std::unique_ptr of ISystem destruction (on exception
+    // unwind), which requires ISystem to be a complete type.
+    Scene::Scene() = default;
+
     // Defined here rather than defaulted in the header so that
     // std::vector<std::unique_ptr<ISystem>>'s destruction does not depend on
     // include order in translation units that instantiate Scene.
