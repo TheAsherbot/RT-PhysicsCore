@@ -1,15 +1,12 @@
 /**
  * @file ComponentStorage.h
  * @brief Contiguous sparse-set component storage template for the ECS.
- *
- * Implements a packed array mapped by an entity-to-index lookup table for O(1)
- * insertion, lookup, and swap-and-pop removal.
  */
 
 #pragma once
 
 #include <vector>
-#include <unordered_map>
+#include <limits>
 #include "RT-PhysicsCore/core/ecs/core/Entity.h"
 #include "RT-PhysicsCore/core/ecs/core/IComponentStorage.h"
 
@@ -71,9 +68,11 @@ namespace RT_PhysicsCore
         const std::vector<Entity>& GetEntities() const;
 
     private:
+        static constexpr std::size_t invalidIndex = (std::numeric_limits<std::size_t>::max)();
+
         std::vector<T> components;
         std::vector<Entity> indexToEntity;
-        std::unordered_map<Entity, std::size_t> entityToIndex;
+        std::vector<std::size_t> entityToIndex;
     };
 
     // --- Template definitions ---
@@ -83,39 +82,46 @@ namespace RT_PhysicsCore
     template<typename T>
     bool ComponentStorage<T>::Has(Entity entity) const
     {
-        return entityToIndex.find(entity) != entityToIndex.end();
+        return entity < entityToIndex.size() && entityToIndex[entity] != invalidIndex;
     }
 
     template<typename T>
     T* ComponentStorage<T>::Get(Entity entity)
     {
-        auto it = entityToIndex.find(entity);
-        if (it == entityToIndex.end())
+        if (entity >= entityToIndex.size() || entityToIndex[entity] == invalidIndex)
         {
             return nullptr;
         }
-        return &components[it->second];
+        return &components[entityToIndex[entity]];
     }
 
     template<typename T>
     const T* ComponentStorage<T>::Get(Entity entity) const
     {
-        auto it = entityToIndex.find(entity);
-        if (it == entityToIndex.end())
+        if (entity >= entityToIndex.size() || entityToIndex[entity] == invalidIndex)
         {
             return nullptr;
         }
-        return &components[it->second];
+        return &components[entityToIndex[entity]];
     }
 
     template<typename T>
     void ComponentStorage<T>::Add(Entity entity, const T& component)
     {
-        auto it = entityToIndex.find(entity);
-        if (it != entityToIndex.end())
+        if (entity < entityToIndex.size() && entityToIndex[entity] != invalidIndex)
         {
-            components[it->second] = component;
+            components[entityToIndex[entity]] = component;
             return;
+        }
+
+        if (entity >= entityToIndex.size())
+        {
+            std::size_t newSize = entity + 1;
+            if (newSize < entityToIndex.size() * 2)
+            {
+                newSize = entityToIndex.size() * 2;
+            }
+            entityToIndex.resize(newSize, invalidIndex);
         }
 
         std::size_t index = components.size();
@@ -127,13 +133,12 @@ namespace RT_PhysicsCore
     template<typename T>
     void ComponentStorage<T>::Remove(Entity entity)
     {
-        auto it = entityToIndex.find(entity);
-        if (it == entityToIndex.end())
+        if (entity >= entityToIndex.size() || entityToIndex[entity] == invalidIndex)
         {
             return;
         }
 
-        std::size_t index = it->second;
+        std::size_t index = entityToIndex[entity];
         std::size_t lastIndex = components.size() - 1;
 
         if (index != lastIndex)
@@ -146,7 +151,7 @@ namespace RT_PhysicsCore
 
         components.pop_back();
         indexToEntity.pop_back();
-        entityToIndex.erase(it);
+        entityToIndex[entity] = invalidIndex;
     }
 
     template<typename T>

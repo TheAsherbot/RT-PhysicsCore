@@ -1,8 +1,6 @@
 /**
  * @file Scene.h
  * @brief Central ECS world context managing entities, component pools, and systems.
- *
- * Coordinates entity lifecycle allocation, component queries, and system dispatching.
  */
 
 #pragma once
@@ -12,6 +10,7 @@
 #include <typeindex>
 #include <tuple>
 #include <memory>
+#include <limits>
 
 #include "RT-PhysicsCore/core/ecs/core/Entity.h"
 #include "RT-PhysicsCore/core/ecs/core/IComponentStorage.h"
@@ -163,9 +162,12 @@ namespace RT_PhysicsCore
         void SetParent(Entity child, Entity parent);
 
     private:
+        static constexpr std::size_t invalidIndex = (std::numeric_limits<std::size_t>::max)();
+
         Entity nextEntity{ 1 };
         std::vector<Entity> entities;
         std::vector<Entity> freeEntities;
+        std::vector<std::size_t> entityToIndex;
 
         double deltaTime{ 0.0 };
         double fixedDeltaTime{ 0.0 };
@@ -249,16 +251,29 @@ namespace RT_PhysicsCore
             return result;
         }
 
-        const auto* firstStorage = GetStorageConst<std::tuple_element_t<0, std::tuple<Ts...>>>();
-        if (!firstStorage)
+        std::tuple<const ComponentStorage<Ts>*...> storages{ GetStorageConst<Ts>()... };
+
+        bool allValid = std::apply([](auto*... s)
+            {
+                return ((s != nullptr) && ...);
+            }, storages);
+
+        if (!allValid)
         {
             return result;
         }
 
+        const auto* firstStorage = std::get<0>(storages);
         const auto& baseEntities = firstStorage->GetEntities();
+
         for (Entity e : baseEntities)
         {
-            if ((HasComponent<Ts>(e) && ...))
+            bool match = std::apply([e](auto*... s)
+                {
+                    return (s->Has(e) && ...);
+                }, storages);
+
+            if (match)
             {
                 result.push_back(e);
             }
