@@ -297,9 +297,15 @@ restitution, materials. Engine/ECS/rendering live in `engine_core.md`.
   and stored directly on `Contact` (`restitution`, `staticFriction`,
   `kineticFriction`) — `ResolutionSystem` never touches
   `PhysicsMaterialComponent` or the material tables at all.
-- Only one material defined so far (`Default`: restitution 0.3, static
-  friction 0.6, kinetic friction 0.4) — starting points to tune, not
-  measured values.
+- Eight built-in materials are defined in `SoloProperties()`:
+  - `Default`: restitution 0.3, static friction 0.6, kinetic friction 0.4
+  - `Clay`: restitution 0.0, static friction 0.8, kinetic friction 0.6 (heavy, zero bounce)
+  - `Wood`: restitution 0.25, static friction 0.5, kinetic friction 0.4 (slight bounce)
+  - `Rubber`: restitution 0.5, static friction 0.8, kinetic friction 0.6 (bouncy)
+  - `HardRubber`: restitution 0.75, static friction 0.8, kinetic friction 0.6 (high bounce)
+  - `SuperBall`: restitution 1.0, static friction 0.6, kinetic friction 0.4 (perfect restitution)
+  - `BouncyIce`: restitution 1.0, static friction 0.0, kinetic friction 0.0 (frictionless bounce for Newton's Cradle)
+  - `Domino`: restitution 0.1, static friction 0.8, kinetic friction 0.6 (high grip, low bounce for stable chain reaction)
 
 ## Collider Placement
 

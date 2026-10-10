@@ -1,6 +1,6 @@
 # RT-PhysicsCore
 
-A real-time 3D rigid body physics engine built from scratch in **C++17** with a custom Entity-Component-System architecture, advanced constraint solvers, and an integrated OpenGL 3.3 debug renderer.
+A real-time 3D rigid body physics engine built from scratch in **C++17** with a custom Entity-Component-System architecture, advanced constraint solvers, telemetry profiling tools, and an integrated OpenGL 3.3 debug renderer.
 
 > **Status:** Active Development · [Physics Design Doc](RT-PhysicsCore/docs/physics_design.md) · [Engine Architecture Doc](RT-PhysicsCore/docs/engine_core.md)
 
@@ -28,7 +28,7 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
   | Sphere–Box | Closest-point clamping |
   | Sphere–Capsule | Point–segment distance |
   | Capsule–Capsule | Ericson segment–segment closest points |
-  | Box–Capsule | Segment–face + edge proximity |
+  | Box–Capsule | Alternating projection (segment to box surface) with contact-plane overlap interval detection |
   | Box–Box | 15-axis SAT with Sutherland–Hodgman face clipping |
 
 - **Multi-Point Contact Manifolds** — Box–Box generates up to 8 contact points via polygon clipping for stable flat stacking. Parallel capsule and capsule-on-face contacts emit 2-point manifolds to prevent unrealistic rolling.
@@ -47,10 +47,16 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
 - **Transform Hierarchy** — Automatic world-space propagation of position, rotation, and scale through parent-child relationships.
 - **Modular System Pipeline** — `ISystem` base with `FixedUpdate` / `Update` / `RenderUpdate` hooks. Physics, collision, resolution, transform propagation, and rendering each run as independent systems.
 
+### Telemetry & Profiling
+
+- **Real-Time Instrumentation** — RAII time-block profiling (`RT_PROFILE_SCOPE`), frame-stage timings, and active memory allocation tracking (`MemoryTracker`).
+- **In-Engine HUD Overlay** — Dear ImGui on-screen metrics display (`TelemetryOverlay`) showing FPS, step durations, and memory usage.
+- **Dedicated Profiler Tool** — Interactive offline session inspector (`RT-ProfilerViewer`) and integrated runtime profiler window (`ProfilerWindow`).
+
 ### Rendering & Debug Tools
 
 - **OpenGL 3.3 Core Renderer** — Directional lighting with ambient, proper normal matrix transforms ($M^{-T}$), and shared GPU primitive buffers. Fully encapsulated behind a Pimpl interface — no GL headers leak into the engine API.
-- **Immediate-Mode Debug Drawing** — Lines, wireframe boxes, and spheres with depth-tested and always-on-top passes.
+- **Immediate-Mode Debug Drawing** — Lines, wireframe boxes, spheres, and cylinders with depth-tested and always-on-top passes.
 - **Dual-Mode Camera** — FreeFly and Orbit modes with smooth mouse-look and scroll zoom.
 - **Multi-Sink Logger** — ANSI color-coded console + timestamped file output with compile-time level stripping via `RT_LOG_ACTIVE_LEVEL`.
 
@@ -66,7 +72,7 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
 | CMake | ≥ 3.11 | Uses FetchContent |
 | OpenGL | 3.3+ | GPU driver support |
 
-GLFW, GLM, and GLAD are fetched or vendored automatically — no manual dependency installation required.
+GLFW and GLM are fetched automatically via CMake FetchContent. GLAD and Dear ImGui are vendored directly in `RT-PhysicsCore/external/` — no manual dependency installation is required.
 
 ### Build Steps
 
@@ -84,9 +90,14 @@ cmake --build build --config Release
 
 | Target | Type | Description |
 |---|---|---|
-| `RT_PhysicsEngine` | Static Library | Core engine: ECS, physics, rendering, utilities |
+| `RT_PhysicsEngine` | Static Library | Core engine: ECS, physics, rendering, telemetry, utilities |
 | `RT-PhysicsCore` | Executable | Interactive demo application |
+| `RT-ProfilerViewer` | Executable | Standalone GUI telemetry and profile session viewer |
 | `PhysicsTests_Collision` | Executable | Narrow-phase collision test suite (11 automated tests + visual harness) |
+| `PhysicsTests_*` | Executables | Dedicated unit suites for AABB, Friction, Integration, MassProperties, PositionCorrection, Restitution, SolverComparison, SolverStability |
+| `ECSTests_TransformHierarchy` | Executable | ECS scene-graph hierarchy propagation verification |
+| `PerformanceTests_*` | Executables | Benchmarks for Broadphase, Narrowphase throughput, Solver scaling, Pile stress, ECS churn, Adaptive iteration |
+| `Example_*` | Executables | 8 interactive sandbox demos: FallingBoxes, BouncingBalls, DominoChain, GyroscopeDemo, InclinedPlane, NewtonsCradle, ShapeSoup, WreckingBall |
 
 ---
 
@@ -108,7 +119,9 @@ cmake --build build --config Release
 | `A` / `D` | Strafe left / right | Pan pivot left / right |
 | `Space` | Ascend (+Y) | Pan pivot up |
 | `Left Ctrl` | Descend (−Y) | Pan pivot down |
-| `Tab` | Toggle between FreeFly ↔ Orbit modes | |
+| `Tab` | Toggle between FreeFly ↔ Orbit modes | Toggle between FreeFly ↔ Orbit modes |
+| `F3` | Cycle telemetry overlay: Off → Minimal → Full (opens Profiler) → Off | |
+| `Escape` | Close the application | Close the application |
 
 ---
 
@@ -122,14 +135,14 @@ cmake --build build --config Release
            │                │                 │
      ┌─────▼──────┐    ┌────▼────┐     ┌──────▼──────┐
      │  Physics   │    │Transform│     │   Render    │
-     │  Pipeline  │    |  Prop.  │     │   System    │
+     │  Pipeline  │    │  Prop.  │     │   System    │
      └─────┬──────┘    └─────────┘     └─────────────┘
            │
     ┌──────▼───────┐
     │ PhysicsSystem│  Symplectic Euler linear + DLM rotational splitting
     └──────┬───────┘
     ┌──────▼───────┐
-    │  Collision   │  Broad phase (AABB) → Narrow phase (SAT)
+    │  Collision   │  Broad phase (AABB) → Narrow phase (SAT / Primitives)
     │   System     │
     └──────┬───────┘
     ┌──────▼───────┐
@@ -150,11 +163,15 @@ RT-PhysicsCore/
 │   │   ├── components/    # RigidBody, Collider, PhysicsMaterial
 │   │   └── systems/       # PhysicsSystem, CollisionSystem, ResolutionSystem
 │   ├── rendering/         # Renderer (Pimpl), Camera, Input, RenderSystem
+│   ├── telemetry/         # Profiler, MemoryTracker, TelemetryOverlay, Sessions
 │   └── utils/             # Logging, DebugDraw, ConsoleInput
 ├── src/                   # All implementations (.cpp)
-├── tests/                 # Collision test suite
+├── examples/              # Standalone demonstration sandboxes (8 examples)
+├── tests/                 # Test suites (Physics, ECS, Performance)
+├── tools/                 # Standalone tools (RT-ProfilerViewer)
 ├── docs/                  # Technical design documents
-└── external/              # Vendored GLAD
+├── devlog/                # Weekly development logs
+└── external/              # Vendored dependencies (GLAD, Dear ImGui)
 ```
 
 ---
@@ -163,7 +180,7 @@ RT-PhysicsCore/
 
 Detailed technical documentation lives in [`RT-PhysicsCore/docs/`](RT-PhysicsCore/docs/):
 
-- [**Physics Design**](RT-PhysicsCore/docs/physics_design.md) — Comprehensive coverage of dynamics integration, inertia tensor math, collision algorithms, constraint formulation, friction models, and solver theory.
+- [**Physics Design**](RT-PhysicsCore/docs/physics_design.md) — Dynamics integration, DLM splitting, inertia tensors, collision algorithms, LCP formulation, Coulomb cone friction, and solver theory.
 - [**Engine Core**](RT-PhysicsCore/docs/engine_core.md) — ECS architecture, transform hierarchy math, fixed timestep loop, rendering pipeline, input system, and debug draw specifications.
 
 ---

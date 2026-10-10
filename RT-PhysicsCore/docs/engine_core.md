@@ -2,7 +2,7 @@
 
 Design decisions and the formulas behind them: ECS, transform hierarchy,
 engine loop, rendering, input, debug drawing. Physics lives in a separate
-`physics.md`.
+`physics_design.md`.
 
 ## Engine Loop
 
@@ -107,8 +107,10 @@ engine loop, rendering, input, debug drawing. Physics lives in a separate
   (`glfwSetInputMode`); `Camera` owns *when* to use it — captures only
   while the right mouse button is held, so the cursor stays free
   otherwise. Mechanism vs. policy, kept separate on purpose.
-- Polling-based (`glfwGetKey` etc. every frame), not GLFW callbacks —
-  simpler, no C-callback-to-C++-object trampoline.
+- Keyboard and mouse buttons use polling (`glfwGetKey`, `glfwGetMouseButton`
+  every frame) to avoid per-key callback dispatch. Mouse scroll uses a
+  minimal static GLFW scroll callback (`ScrollCallback`) routed via
+  `glfwSetWindowUserPointer`.
 - `WasKeyPressed` = this frame's state true, last frame's false — fires
   once per press, not once per held frame.
 - On `SetCursorCaptured(true)`, the mouse position is immediately re-read
@@ -117,7 +119,7 @@ engine loop, rendering, input, debug drawing. Physics lives in a separate
 
 ## Debug Drawing
 
-- `DebugDraw` is pure data — `Line`/`Box`/`Sphere` just append to a
+- `DebugDraw` is pure data — `Line`/`Box`/`Sphere`/`Cylinder` just append to a
   buffer, zero OpenGL dependency. Lives in `utils/`, not `rendering/`, so
   non-rendering code can queue debug visuals without depending on the
   rendering module.
@@ -125,4 +127,4 @@ engine loop, rendering, input, debug drawing. Physics lives in a separate
   only thing that turns it into draw calls.
 - `Box` → 12 edges from 8 corners. `Sphere` → 3 orthogonal great-circle
   rings (XY/XZ/YZ), each built from straight segments around a parametric
-  circle.
+  circle. `Cylinder` → top and bottom circular rings plus 4 vertical connecting lines.
