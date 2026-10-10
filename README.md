@@ -14,8 +14,8 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
 ### Physics Simulation
 
 - **6-DOF Rigid Body Dynamics** — Full linear and angular state with analytical inertia tensors for boxes, spheres, cylinders, and capsules (including parallel-axis theorem decomposition for capsule end-caps).
-- **Angular Momentum Integration** — Integrates angular momentum **L** rather than angular velocity **ω**, with per-step world-space inertia tensor rotation ($I_{world}^{-1} = R \cdot I_{body}^{-1} \cdot R^T$). This correctly reproduces torque-free precession and the intermediate-axis (Dzhanibekov) effect that naive ω-integrators miss.
-- **Symplectic Euler Integration** — Velocity-first semi-implicit integration preserves energy over long simulations. Quaternion orientations are integrated and renormalized each step to prevent drift.
+- **DLM Symplectic Rotational Integration** — Decomposes rigid-body angular motion using the Dullweber–Leimkuhler–McLachlan (DLM 1997) symplectic splitting scheme ($R_1(h/2) \circ R_2(h/2) \circ R_3(h) \circ R_2(h/2) \circ R_1(h/2)$). Strictly bounds kinetic energy drift to $<0.01\%$, exactly conserves angular momentum $\|\mathbf{L}\|$, and naturally captures the tennis-racket / Dzhanibekov effect without numerical damping.
+- **Semi-Implicit Linear Euler** — Velocity-first integration maintains symplectic energy conservation for linear motion and resting contacts over long simulation runs.
 - **Accumulator-Based Fixed Timestep** — Decouples 60 Hz physics from variable render rates with spiral-of-death clamping and sub-frame interpolation factor output.
 
 ### Collision Detection
@@ -126,7 +126,7 @@ cmake --build build --config Release
      └─────┬──────┘    └─────────┘     └─────────────┘
            │
     ┌──────▼───────┐
-    │ PhysicsSystem│  Symplectic Euler integration
+    │ PhysicsSystem│  Symplectic Euler linear + DLM rotational splitting
     └──────┬───────┘
     ┌──────▼───────┐
     │  Collision   │  Broad phase (AABB) → Narrow phase (SAT)

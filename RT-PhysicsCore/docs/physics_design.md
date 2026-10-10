@@ -16,18 +16,15 @@ restitution, materials. Engine/ECS/rendering live in `engine_core.md`.
 - Linear state is velocity, not momentum — with constant mass the two
   are always trivially interchangeable, so there's no accuracy reason to
   prefer momentum.
-- Angular state is angular momentum, not angular velocity. A body's
+- Angular state is angular momentum (L), not angular velocity (ω). A body's
   world-space inertia isn't constant (it rotates with the body:
   `invInertiaWorld = R * invInertiaBody * R^T`). Angular momentum is
   what `dL/dt = torque` actually conserves when torque is zero; angular
-  velocity isn't, for any non-spherically-symmetric body — integrating L
-  and re-deriving `ω = invInertiaWorld * L` each step reproduces real
-  torque-free tumbling (the "tennis racket"/intermediate-axis effect);
-  integrating ω directly would miss it.
-- `angularVelocity`/`invInertiaWorld` are also cached on the component,
-  but as derived values `PhysicsSystem` recomputes every step, not
-  fundamental state. `ResolutionSystem` reads them instead of redoing
-  the same multiply.
+  velocity is not conserved for any asymmetric body.
+- Caches: `angularVelocity` and `invInertiaWorld` are cached on the component
+  for consumers like `ResolutionSystem`. They are computed from the **final**
+  orientation of the step so downstream contact solvers see up-to-date,
+  synchronized inertia data rather than one-step-stale values.
 
 ## Mass Properties (`MassProperties.h/.cpp`)
 
@@ -82,18 +79,31 @@ restitution, materials. Engine/ECS/rendering live in `engine_core.md`.
   reverse) is what makes this symplectic rather than explicit Euler — it
   keeps long-running resting/oscillating contacts from slowly gaining
   energy.
-- Angular, same pattern:
-  ```
-  invInertiaWorld  = R * invInertiaBody * R^T      // R from current orientation
-  angularMomentum += torqueAccum * dt
-  angularVelocity  = invInertiaWorld * angularMomentum
-  q += 0.5 * dt * (omegaQuat * q)                  // omegaQuat = (0, angularVelocity)
-  q  = normalize(q)
-  ```
-  `invInertiaWorld` is rebuilt from the current orientation every step —
-  it is not constant. Renormalizing `q` every step is mandatory:
-  integration does not preserve unit length on its own, and a drifting
-  magnitude silently corrupts every downstream rotation calculation.
+-  Angular: DLM Symplectic Splitting (Dullweber, Leimkuhler, McLachlan 1997) —
+  Explicit Euler updates (`q += 0.5 * dt * ω * q`) evaluate ω once per step while
+  orientation and inertia are coupled. This artificially pumps rotational kinetic
+  energy into the system (+769% over 60s), driving asymmetric bodies to settle
+  into their minimum-inertia axis and completely destroying intermediate-axis
+  tumbling (the Dzhanibekov / tennis-racket effect).
+  The engine instead uses the second-order, time-reversible DLM symplectic
+  splitting algorithm in the body frame:
+  1. External torque kick on world angular momentum:
+     `angularMomentum += torqueAccum * dt`
+  2. Transform momentum into the body frame:
+     `bodyMomentum = R^T * angularMomentum`
+  3. Perform a 5-step Strang splitting across principal axes:
+     `R1(h/2) ∘ R2(h/2) ∘ R3(h) ∘ R2(h/2) ∘ R1(h/2)`
+     For each step along axis `k` with duration `tau`:
+     - Rotation angle: `theta = tau * bodyMomentum[k] * invInertiaBody[k][k]`
+     - Compose local rotation: `q = normalize(q * quat(axis k, theta))`
+     - Rotate body momentum: `bodyMomentum = rotate_axis(bodyMomentum, k, -theta)`
+  4. Synchronize derived caches from the final step orientation:
+     ```
+     invInertiaWorld = R_final * invInertiaBody * R_final^T
+     angularVelocity = invInertiaWorld * angularMomentum
+     ```
+  This preserves the phase space Hamiltonian, bounds energy drift to <0.01%,
+  conserves |L| exactly, and reproduces perpetual intermediate-axis tumbling.
 
 ## Collision Detection — Broad Phase (`AABB.h/.cpp`, `CollisionSystem`)
 

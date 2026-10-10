@@ -1,9 +1,6 @@
 /**
  * @file PhysicsSystem.h
- * @brief Rigid body numerical integration system.
- *
- * Integrates linear and angular momentum using a symplectic semi-implicit Euler scheme,
- * updates world-space orientations, and applies uniform body forces such as gravity.
+ * @brief Rigid body numerical integration system using symplectic Euler and DLM rotational splitting.
  */
 
 #pragma once
@@ -16,6 +13,9 @@ namespace RT_PhysicsCore
     /**
      * @class PhysicsSystem
      * @brief Evaluates Newtonian rigid body dynamics across active physics entities.
+     *
+     * Integrates linear motion via semi-implicit Euler and rotational dynamics
+     * via the Dullweber-Leimkuhler-McLachlan (DLM) symplectic splitting scheme.
      */
     class PhysicsSystem : public ISystem
     {
