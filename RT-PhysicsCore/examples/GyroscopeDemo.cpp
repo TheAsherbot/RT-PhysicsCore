@@ -100,22 +100,37 @@ int main()
             DebugDraw::Line(tc->position, tc->position + rot[2] * 1.5f, { 0.2f, 0.2f, 1.0f }, false);
         }
 
+        static float initialETumbler = -1.0f;
+        static float initialESpinner = -1.0f;
+
+        auto* trb_ptr = scene.GetComponent<RigidBodyComponent>(tumbler);
+        auto* srb_ptr = scene.GetComponent<RigidBodyComponent>(spinner);
+
+        float curETumbler = 0.5f * glm::dot(trb_ptr->angularMomentum, trb_ptr->angularVelocity);
+        float curESpinner = 0.5f * glm::dot(srb_ptr->angularMomentum, srb_ptr->angularVelocity);
+
+        if (initialETumbler <= 0.0f && curETumbler > 0.0f) initialETumbler = curETumbler;
+        if (initialESpinner <= 0.0f && curESpinner > 0.0f) initialESpinner = curESpinner;
+
+        float driftTumbler = std::abs(curETumbler - initialETumbler) / initialETumbler * 100.0f;
+        float driftSpinner = std::abs(curESpinner - initialESpinner) / initialESpinner * 100.0f;
+
         ImGui::SetNextWindowPos(ImVec2(10, 10));
         ImGui::Begin("Gyroscope Dynamics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("Space: Toggle Slow-Mo (%s)", slowMo ? "ON" : "OFF");
         ImGui::Separator();
 
-        auto* trb_ptr = scene.GetComponent<RigidBodyComponent>(tumbler);
         ImGui::Text("TUMBLER (Intermediate Axis)");
-        ImGui::Text("|L| = %.3f", glm::length(trb_ptr->angularMomentum));
-        ImGui::Text("w   = [%.2f, %.2f, %.2f]", trb_ptr->angularVelocity.x, trb_ptr->angularVelocity.y, trb_ptr->angularVelocity.z);
+        ImGui::Text("|L|     = %.3f", glm::length(trb_ptr->angularMomentum));
+        ImGui::Text("w       = [%.2f, %.2f, %.2f]", trb_ptr->angularVelocity.x, trb_ptr->angularVelocity.y, trb_ptr->angularVelocity.z);
+        ImGui::Text("E       = %.4f (drift: %+.3f%%)", curETumbler, driftTumbler);
 
         ImGui::Separator();
 
-        auto* srb_ptr = scene.GetComponent<RigidBodyComponent>(spinner);
         ImGui::Text("SPINNER (Major Axis)");
-        ImGui::Text("|L| = %.3f", glm::length(srb_ptr->angularMomentum));
-        ImGui::Text("w   = [%.2f, %.2f, %.2f]", srb_ptr->angularVelocity.x, srb_ptr->angularVelocity.y, srb_ptr->angularVelocity.z);
+        ImGui::Text("|L|     = %.3f", glm::length(srb_ptr->angularMomentum));
+        ImGui::Text("w       = [%.2f, %.2f, %.2f]", srb_ptr->angularVelocity.x, srb_ptr->angularVelocity.y, srb_ptr->angularVelocity.z);
+        ImGui::Text("E       = %.4f (drift: %+.3f%%)", curESpinner, driftSpinner);
         ImGui::End();
 
         renderer.FlushDebugDraw();

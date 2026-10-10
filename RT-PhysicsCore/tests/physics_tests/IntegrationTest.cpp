@@ -1,9 +1,6 @@
 /**
  * @file IntegrationTest.cpp
  * @brief Validates PhysicsSystem symplectic Euler integration against analytical solutions.
- *
- * Tests free-fall trajectories, projectile motion, angular momentum conservation,
- * quaternion normalization stability, and force accumulator clearing.
  */
 
 #include <chrono>
@@ -73,7 +70,7 @@ namespace
 
     void Assert(const std::string& name, bool condition, const std::string& detail)
     {
-        results.push_back({name, condition, detail});
+        results.push_back({ name, condition, detail });
     }
 
     // --- Visual data ---
@@ -91,7 +88,7 @@ namespace
         auto is = CreateIntegrationScene();
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
-        tc.position = {0.0f, 10.0f, 0.0f};
+        tc.position = { 0.0f, 10.0f, 0.0f };
         is->scene.AddComponent(e, tc);
         RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 0.5f));
         is->scene.AddComponent(e, rb);
@@ -112,7 +109,7 @@ namespace
         auto is = CreateIntegrationScene();
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
-        tc.position = {0.0f, 50.0f, 0.0f};
+        tc.position = { 0.0f, 50.0f, 0.0f };
         is->scene.AddComponent(e, tc);
         is->scene.AddComponent(e, MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 0.5f)));
 
@@ -132,10 +129,10 @@ namespace
         auto is = CreateIntegrationScene();
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
-        tc.position = {0.0f, 5.0f, 0.0f};
+        tc.position = { 0.0f, 5.0f, 0.0f };
         is->scene.AddComponent(e, tc);
         RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 0.5f));
-        rb.velocity = {10.0f, 0.0f, 0.0f};
+        rb.velocity = { 10.0f, 0.0f, 0.0f };
         is->scene.AddComponent(e, rb);
 
         // 60 ticks = 1.0s
@@ -157,10 +154,10 @@ namespace
         auto is = CreateIntegrationScene();
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
-        tc.position = {0.0f, 0.0f, 0.0f};
+        tc.position = { 0.0f, 0.0f, 0.0f };
         is->scene.AddComponent(e, tc);
         RigidBodyComponent rb = MakeStaticBody();
-        rb.forceAccum = {1000.0f, 1000.0f, 1000.0f};
+        rb.forceAccum = { 1000.0f, 1000.0f, 1000.0f };
         is->scene.AddComponent(e, rb);
 
         StepScene(is->scene, 120);
@@ -175,14 +172,14 @@ namespace
     void RunAngularMomentumConservationTest()
     {
         auto is = CreateIntegrationScene();
-        is->physics->SetGravity({0.0f, 0.0f, 0.0f});
+        is->physics->SetGravity({ 0.0f, 0.0f, 0.0f });
 
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
         is->scene.AddComponent(e, tc);
         // Sphere: isotropic inertia, L should stay constant
         RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 1.0f));
-        rb.angularMomentum = {0.0f, 2.0f, 0.0f};
+        rb.angularMomentum = { 0.0f, 2.0f, 0.0f };
         is->scene.AddComponent(e, rb);
 
         StepScene(is->scene, 600);
@@ -198,39 +195,127 @@ namespace
     void RunAsymmetricTumblingTest()
     {
         auto is = CreateIntegrationScene();
-        is->physics->SetGravity({0.0f, 0.0f, 0.0f});
+        is->physics->SetGravity({ 0.0f, 0.0f, 0.0f });
 
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
         is->scene.AddComponent(e, tc);
         // Asymmetric box: Dzhanibekov-capable
-        glm::vec3 halfExtents{1.5f, 0.1f, 0.5f};
+        glm::vec3 halfExtents{ 1.5f, 0.1f, 0.5f };
         RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, halfExtents));
-        rb.angularMomentum = {0.01f, 0.01f, 3.0f}; // primarily intermediate axis
+        rb.angularMomentum = { 0.01f, 0.01f, 3.0f }; // primarily intermediate axis
         is->scene.AddComponent(e, rb);
 
         float initialMag = glm::length(rb.angularMomentum);
-        StepScene(is->scene, 600);
-        auto* body = is->scene.GetComponent<RigidBodyComponent>(e);
-        float finalMag = glm::length(body->angularMomentum);
-        float drift = std::abs(finalMag - initialMag) / initialMag;
+        auto* initialBody = is->scene.GetComponent<RigidBodyComponent>(e);
+        // Compute the analytical initial kinetic energy from body inertia:
+        glm::vec3 initL = rb.angularMomentum;
+        float initialE = 0.5f * (
+            initL.x * initL.x * rb.invInertiaBody[0][0] +
+            initL.y * initL.y * rb.invInertiaBody[1][1] +
+            initL.z * initL.z * rb.invInertiaBody[2][2]
+            );
+
+        float maxEnergyDrift = 0.0f;
+        int flips = 0;
+        bool hasPrev = false;
+        bool prevSign = false;
+
+        // Run 60 seconds (3600 ticks)
+        for (int i = 0; i < 3600; ++i)
+        {
+            StepScene(is->scene, 1);
+            auto* curTc = is->scene.GetComponent<TransformComponent>(e);
+            auto* curBody = is->scene.GetComponent<RigidBodyComponent>(e);
+
+            float curE = 0.5f * glm::dot(curBody->angularMomentum, curBody->angularVelocity);
+            float eDrift = std::abs(curE - initialE) / initialE;
+            if (eDrift > maxEnergyDrift)
+            {
+                maxEnergyDrift = eDrift;
+            }
+
+            glm::mat3 rot = glm::mat3_cast(curTc->rotation);
+            glm::vec3 bodyL = glm::transpose(rot) * curBody->angularMomentum;
+            bool sign = bodyL.z > 0.0f;
+            if (hasPrev && sign != prevSign)
+            {
+                ++flips;
+            }
+            prevSign = sign;
+            hasPrev = true;
+        }
+
+        auto* finalBody = is->scene.GetComponent<RigidBodyComponent>(e);
+        float finalMag = glm::length(finalBody->angularMomentum);
+        float lDrift = std::abs(finalMag - initialMag) / initialMag;
 
         std::ostringstream oss;
-        oss << "|L| initial=" << initialMag << " final=" << finalMag
-            << " relative_drift=" << (drift * 100.0f) << "%";
-        Assert("Angular momentum conservation (asymmetric tumble)", drift < 0.005f, oss.str());
+        oss << "|L| drift=" << (lDrift * 100.0f) << "% max E drift=" << (maxEnergyDrift * 100.0f)
+            << "% flips=" << flips;
+        Assert("Dzhanibekov energy conservation (60s)", maxEnergyDrift < 0.001f, oss.str());
+        Assert("Dzhanibekov periodic flips (60s)", flips >= 15 && flips <= 25, oss.str());
+    }
+
+    void RunMajorAxisStabilityTest()
+    {
+        auto is = CreateIntegrationScene();
+        is->physics->SetGravity({ 0.0f, 0.0f, 0.0f });
+
+        Entity e = is->scene.CreateEntity();
+        TransformComponent tc;
+        is->scene.AddComponent(e, tc);
+        glm::vec3 halfExtents{ 1.5f, 0.1f, 0.5f };
+        RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, halfExtents));
+        rb.angularMomentum = { 0.01f, 3.0f, 0.01f }; // major axis spin
+        is->scene.AddComponent(e, rb);
+
+        glm::vec3 initL = rb.angularMomentum;
+        float initialE = 0.5f * (
+            initL.x * initL.x * rb.invInertiaBody[0][0] +
+            initL.y * initL.y * rb.invInertiaBody[1][1] +
+            initL.z * initL.z * rb.invInertiaBody[2][2]
+            );
+        float minLyRatio = 1.0f;
+        float maxEDrift = 0.0f;
+
+        for (int i = 0; i < 3600; ++i)
+        {
+            StepScene(is->scene, 1);
+            auto* curTc = is->scene.GetComponent<TransformComponent>(e);
+            auto* curBody = is->scene.GetComponent<RigidBodyComponent>(e);
+
+            float curE = 0.5f * glm::dot(curBody->angularMomentum, curBody->angularVelocity);
+            float eDrift = std::abs(curE - initialE) / initialE;
+            if (eDrift > maxEDrift)
+            {
+                maxEDrift = eDrift;
+            }
+
+            glm::mat3 rot = glm::mat3_cast(curTc->rotation);
+            glm::vec3 bodyL = glm::transpose(rot) * curBody->angularMomentum;
+            float ratio = std::abs(bodyL.y) / glm::length(curBody->angularMomentum);
+            if (ratio < minLyRatio)
+            {
+                minLyRatio = ratio;
+            }
+        }
+
+        std::ostringstream oss;
+        oss << "min Ly ratio=" << minLyRatio << " max E drift=" << (maxEDrift * 100.0f) << "%";
+        Assert("Major axis spin stability (60s)", minLyRatio >= 0.999f && maxEDrift < 0.001f, oss.str());
     }
 
     void RunQuaternionNormalizationTest()
     {
         auto is = CreateIntegrationScene();
-        is->physics->SetGravity({0.0f, 0.0f, 0.0f});
+        is->physics->SetGravity({ 0.0f, 0.0f, 0.0f });
 
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
         is->scene.AddComponent(e, tc);
-        RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, {1.0f, 0.5f, 0.3f}));
-        rb.angularMomentum = {5.0f, 3.0f, 7.0f}; // high spin
+        RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, { 1.0f, 0.5f, 0.3f }));
+        rb.angularMomentum = { 5.0f, 3.0f, 7.0f }; // high spin
         is->scene.AddComponent(e, rb);
 
         StepScene(is->scene, 6000); // 100 seconds at 60Hz
@@ -245,13 +330,13 @@ namespace
     void RunAccumulatorClearingTest()
     {
         auto is = CreateIntegrationScene();
-        is->physics->SetGravity({0.0f, 0.0f, 0.0f});
+        is->physics->SetGravity({ 0.0f, 0.0f, 0.0f });
 
         Entity e = is->scene.CreateEntity();
         TransformComponent tc;
         is->scene.AddComponent(e, tc);
         RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 0.5f));
-        rb.forceAccum = {60.0f, 0.0f, 0.0f};
+        rb.forceAccum = { 60.0f, 0.0f, 0.0f };
         is->scene.AddComponent(e, rb);
 
         // Tick 1: force is applied
@@ -288,13 +373,13 @@ namespace
         {
             VisualTrajectory v;
             v.name = "Free-fall from y=10";
-            v.simColor = {0.3f, 0.6f, 1.0f};
-            v.analyticalColor = {1.0f, 1.0f, 1.0f};
+            v.simColor = { 0.3f, 0.6f, 1.0f };
+            v.analyticalColor = { 1.0f, 1.0f, 1.0f };
 
             auto is = CreateIntegrationScene();
             Entity e = is->scene.CreateEntity();
             TransformComponent tc;
-            tc.position = {0.0f, 10.0f, 0.0f};
+            tc.position = { 0.0f, 10.0f, 0.0f };
             is->scene.AddComponent(e, tc);
             is->scene.AddComponent(e, MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 0.5f)));
 
@@ -303,7 +388,7 @@ namespace
                 auto* t = is->scene.GetComponent<TransformComponent>(e);
                 v.simulatedTrail.push_back(t->position);
                 float time = static_cast<float>(i) * static_cast<float>(kFixedDt);
-                v.analyticalTrail.push_back({0.0f, 10.0f - 0.5f * kGravity * time * time, 0.0f});
+                v.analyticalTrail.push_back({ 0.0f, 10.0f - 0.5f * kGravity * time * time, 0.0f });
                 StepScene(is->scene, 1);
             }
             visuals.push_back(std::move(v));
@@ -313,16 +398,16 @@ namespace
         {
             VisualTrajectory v;
             v.name = "Projectile throw";
-            v.simColor = {1.0f, 0.5f, 0.2f};
-            v.analyticalColor = {1.0f, 1.0f, 1.0f};
+            v.simColor = { 1.0f, 0.5f, 0.2f };
+            v.analyticalColor = { 1.0f, 1.0f, 1.0f };
 
             auto is = CreateIntegrationScene();
             Entity e = is->scene.CreateEntity();
             TransformComponent tc;
-            tc.position = {-5.0f, 8.0f, 0.0f};
+            tc.position = { -5.0f, 8.0f, 0.0f };
             is->scene.AddComponent(e, tc);
             RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeSphereInertia(1.0f, 0.5f));
-            rb.velocity = {8.0f, 5.0f, 0.0f};
+            rb.velocity = { 8.0f, 5.0f, 0.0f };
             is->scene.AddComponent(e, rb);
 
             for (int i = 0; i <= 90; ++i)
@@ -334,7 +419,7 @@ namespace
                     -5.0f + 8.0f * time,
                     8.0f + 5.0f * time - 0.5f * kGravity * time * time,
                     0.0f
-                });
+                    });
                 StepScene(is->scene, 1);
             }
             visuals.push_back(std::move(v));
@@ -356,6 +441,7 @@ int main()
     RunStaticBodyIgnoresForceTest();
     RunAngularMomentumConservationTest();
     RunAsymmetricTumblingTest();
+    RunMajorAxisStabilityTest();
     RunQuaternionNormalizationTest();
     RunAccumulatorClearingTest();
 
@@ -381,11 +467,10 @@ int main()
 
     auto trajectoryVisuals = BuildVisualTrajectories();
 
-    // Live angular visual cases (created on demand when switching)
     struct LiveAngularCase
     {
         std::string name;
-        glm::vec3 halfExtents;       // for wireframe shape
+        glm::vec3 halfExtents;
         bool isSphere;
         glm::vec3 initialL;
         glm::vec3 bodyColor;
@@ -393,14 +478,14 @@ int main()
 
     std::vector<LiveAngularCase> angularCases = {
         {"Spinning sphere (L conserved, omega constant)",
-            {0.5f, 0.5f, 0.5f}, true,
-            {0.0f, 2.0f, 0.0f}, {0.3f, 0.8f, 0.4f}},
+            { 0.5f, 0.5f, 0.5f }, true,
+            { 0.0f, 2.0f, 0.0f }, { 0.3f, 0.8f, 0.4f }},
         {"Dzhanibekov tumble (L conserved, omega wobbles)",
-            {1.5f, 0.1f, 0.5f}, false,
-            {0.01f, 0.01f, 3.0f}, {1.0f, 0.5f, 0.2f}},
+            { 1.5f, 0.1f, 0.5f }, false,
+            { 0.01f, 0.01f, 3.0f }, { 1.0f, 0.5f, 0.2f }},
         {"Fast spin - quaternion stability",
-            {1.0f, 0.5f, 0.3f}, false,
-            {5.0f, 3.0f, 7.0f}, {0.6f, 0.3f, 0.9f}},
+            { 1.0f, 0.5f, 0.3f }, false,
+            { 5.0f, 3.0f, 7.0f }, { 0.6f, 0.3f, 0.9f }},
     };
 
     size_t totalVisuals = trajectoryVisuals.size() + angularCases.size();
@@ -409,7 +494,6 @@ int main()
     constexpr double kSecondsPerVisual = 6.0;
     auto lastTime = std::chrono::steady_clock::now();
 
-    // Live angular scene (created when switching to an angular case)
     std::unique_ptr<IntegrationScene> liveScene;
     Entity liveEntity = 0;
 
@@ -464,7 +548,6 @@ int main()
 
         if (current < trajectoryVisuals.size())
         {
-            // ── Draw pre-computed trajectory ──
             const auto& vis = trajectoryVisuals[current];
 
             for (size_t i = 1; i < vis.simulatedTrail.size(); ++i)
@@ -499,11 +582,9 @@ int main()
         }
         else if (liveScene)
         {
-            // ── Live angular simulation ──
             size_t angIdx = current - trajectoryVisuals.size();
             const auto& ac = angularCases[angIdx];
 
-            // Step physics
             int subSteps = static_cast<int>(dt / kFixedDt);
             if (subSteps < 1)
             {
@@ -523,23 +604,21 @@ int main()
             auto* rb = liveScene->scene.GetComponent<RigidBodyComponent>(liveEntity);
 
             glm::mat3 rot = glm::mat3_cast(tc->rotation);
-            glm::vec3 pos(0.0f); // draw at origin
+            glm::vec3 pos(0.0f);
 
-            // Draw body wireframe
             if (ac.isSphere)
             {
                 DebugDraw::Sphere(pos, ac.halfExtents.x, ac.bodyColor);
             }
             else
             {
-                // Oriented box
                 glm::vec3 c[8];
                 int idx = 0;
-                for (float sx : {-1.0f, 1.0f})
+                for (float sx : { -1.0f, 1.0f })
                 {
-                    for (float sy : {-1.0f, 1.0f})
+                    for (float sy : { -1.0f, 1.0f })
                     {
-                        for (float sz : {-1.0f, 1.0f})
+                        for (float sz : { -1.0f, 1.0f })
                         {
                             c[idx++] = pos
                                 + rot[0] * sx * ac.halfExtents.x
@@ -558,29 +637,25 @@ int main()
                 }
             }
 
-            // Draw body-frame axes (thin, rotate with object)
             float axisLen = 0.8f;
             DebugDraw::Line(pos, pos + rot[0] * axisLen, { 0.8f, 0.2f, 0.2f });
             DebugDraw::Line(pos, pos + rot[1] * axisLen, { 0.2f, 0.8f, 0.2f });
             DebugDraw::Line(pos, pos + rot[2] * axisLen, { 0.2f, 0.2f, 0.8f });
 
-            // Draw angular momentum L (magenta — should stay constant)
             float lScale = 1.5f;
             glm::vec3 lDir = rb->angularMomentum * lScale;
             DebugDraw::Line(pos, pos + lDir, { 1.0f, 0.0f, 1.0f }, false);
             DebugDraw::Sphere(pos + lDir, 0.06f, { 1.0f, 0.0f, 1.0f }, 6, false);
 
-            // Draw angular velocity omega (yellow — may wobble)
             glm::vec3 omegaDir = rb->angularVelocity * 0.3f;
             DebugDraw::Line(pos, pos + omegaDir, { 1.0f, 1.0f, 0.0f }, false);
             DebugDraw::Sphere(pos + omegaDir, 0.06f, { 1.0f, 1.0f, 0.0f }, 6, false);
 
-            // Draw |L| magnitude sphere (faint, shows conservation)
             float lMag = glm::length(rb->angularMomentum);
             float initialMag = glm::length(ac.initialL);
             glm::vec3 magColor = (std::abs(lMag - initialMag) / initialMag < 0.01f)
-                ? glm::vec3(0.0f, 1.0f, 0.0f)   // green: conserved
-                : glm::vec3(1.0f, 0.0f, 0.0f);   // red: drifting
+                ? glm::vec3(0.0f, 1.0f, 0.0f)
+                : glm::vec3(1.0f, 0.0f, 0.0f);
             DebugDraw::Sphere(pos, lMag * lScale, magColor, 16);
         }
 
