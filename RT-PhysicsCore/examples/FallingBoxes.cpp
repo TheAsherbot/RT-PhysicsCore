@@ -1,10 +1,11 @@
 /**
  * @file FallingBoxes.cpp
- * @brief Continuous rigid body stress test.
+ * @brief Continuous rigid body stress test with lifetime recycling.
  */
 
 #include <memory>
 #include <random>
+#include <vector>
 #include <GLFW/glfw3.h>
 
 #include "RT-PhysicsCore/telemetry/TelemetryOverlay.h"
@@ -31,6 +32,21 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui/imgui.h>
 
+namespace
+{
+    using namespace RT_PhysicsCore;
+
+    /**
+     * @struct ActiveBox
+     * @brief Tracks an active body and its spawn timestamp for automatic lifetime deletion.
+     */
+    struct ActiveBox
+    {
+        Entity entity;
+        double spawnTime;
+    };
+}
+
 int main()
 {
     using namespace RT_PhysicsCore;
@@ -41,7 +57,10 @@ int main()
     ProfilerWindow profilerWindow;
 
     Renderer renderer(1280, 720, "Example: Falling Boxes");
-    if (!renderer.IsValid()) return 1;
+    if (!renderer.IsValid())
+    {
+        return 1;
+    }
 
     Engine engine(60.0);
     Scene scene;
@@ -76,79 +95,114 @@ int main()
     std::uniform_real_distribution<float> colorDist(0.4f, 1.0f);
     std::uniform_real_distribution<float> rotDist(-3.14f, 3.14f);
 
-    int objCount = 0;
+    std::vector<ActiveBox> activeBoxes;
+    double totalTime = 0.0;
     double spawnTimer = 0.0;
     bool drawContacts = false;
     bool drawNormals = false;
 
-    engine.SetUpdateCallback([&](double dt) {
-        scene.SetDeltaTime(dt);
-        scene.UpdateSystems();
-
-        if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F1)) drawContacts = !drawContacts;
-        if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F2)) drawNormals = !drawNormals;
-
-        if (renderer.ShouldClose() || renderer.GetInput().WasKeyPressed(GLFW_KEY_ESCAPE))
+    engine.SetUpdateCallback([&](double dt)
         {
-            engine.RequestExit();
-        }
-        });
+            scene.SetDeltaTime(dt);
+            scene.UpdateSystems();
 
-    engine.SetFixedUpdateCallback([&](double dt) {
-        scene.SetFixedDeltaTime(dt);
-        scene.FixedUpdateSystems();
-
-        spawnTimer += dt;
-        if (spawnTimer > 0.2 && objCount < 200)
-        {
-            spawnTimer = 0.0;
-            Entity e = scene.CreateEntity();
-            float size = sizeDist(rng);
-            bool isBox = posDist(rng) > 0.0f;
-
-            TransformComponent tc;
-            tc.position = { posDist(rng), 12.0f, posDist(rng) };
-            tc.scale = { size * 2, size * 2, size * 2 };
-            tc.rotation = glm::quat(glm::vec3(rotDist(rng), rotDist(rng), rotDist(rng)));
-            scene.AddComponent(e, tc);
-
-            MeshComponent mc;
-            mc.shape = isBox ? PrimitiveShape::Cube : PrimitiveShape::Sphere;
-            mc.color = { colorDist(rng), colorDist(rng), colorDist(rng) };
-            scene.AddComponent(e, mc);
-
-            float mass = size * size * size * 10.0f;
-            scene.AddComponent(e, MakeDynamicBody(mass,
-                isBox ? ComputeBoxInertia(mass, glm::vec3(size)) : ComputeSphereInertia(mass, size)));
-
-            ColliderComponent cc;
-            cc.shape = isBox ? ColliderShape::Box : ColliderShape::Sphere;
-            cc.size = { size, size, size };
-            scene.AddComponent(e, cc);
-
-            ++objCount;
-        }
-        });
-
-    engine.SetRenderCallback([&](double /*alpha*/) {
-        renderer.BeginFrame();
-        scene.RenderUpdateSystems();
-
-        if (drawContacts || drawNormals)
-        {
-            for (const auto& c : colSysPtr->GetContacts())
+            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F1))
             {
-                for (int i = 0; i < c.pointCount; ++i)
+                drawContacts = !drawContacts;
+            }
+            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F2))
+            {
+                drawNormals = !drawNormals;
+            }
+
+            if (renderer.ShouldClose() || renderer.GetInput().WasKeyPressed(GLFW_KEY_ESCAPE))
+            {
+                engine.RequestExit();
+            }
+        });
+
+    engine.SetFixedUpdateCallback([&](double dt)
+        {
+            totalTime += dt;
+            spawnTimer += dt;
+
+            scene.SetFixedDeltaTime(dt);
+            scene.FixedUpdateSystems();
+
+            // 1. Recycle entities older than 20.0 seconds
+            constexpr double maxLifetime = 20.0;
+            size_t writeIdx = 0;
+            for (size_t readIdx = 0; readIdx < activeBoxes.size(); ++readIdx)
+            {
+                if (totalTime - activeBoxes[readIdx].spawnTime >= maxLifetime)
                 {
-                    if (drawContacts) DebugDraw::Sphere(c.points[i], 0.05f, { 1.0f, 1.0f, 0.0f });
-                    if (drawNormals) DebugDraw::Line(c.points[i], c.points[i] + c.normal * 0.4f, { 1.0f, 0.0f, 0.0f });
+                    scene.DestroyEntity(activeBoxes[readIdx].entity);
+                }
+                else
+                {
+                    activeBoxes[writeIdx++] = activeBoxes[readIdx];
                 }
             }
-        }
+            activeBoxes.resize(writeIdx);
 
-        renderer.FlushDebugDraw();
-        overlay.Render();
-        renderer.EndFrame();
+            // 2. Spawn a new body every 0.2s
+            if (spawnTimer >= 0.2)
+            {
+                spawnTimer = 0.0;
+                Entity e = scene.CreateEntity();
+                float size = sizeDist(rng);
+                bool isBox = posDist(rng) > 0.0f;
+
+                TransformComponent tc;
+                tc.position = { posDist(rng), 12.0f, posDist(rng) };
+                tc.scale = { size * 2.0f, size * 2.0f, size * 2.0f };
+                tc.rotation = glm::quat(glm::vec3(rotDist(rng), rotDist(rng), rotDist(rng)));
+                scene.AddComponent(e, tc);
+
+                MeshComponent mc;
+                mc.shape = isBox ? PrimitiveShape::Cube : PrimitiveShape::Sphere;
+                mc.color = { colorDist(rng), colorDist(rng), colorDist(rng) };
+                scene.AddComponent(e, mc);
+
+                float mass = size * size * size * 10.0f;
+                scene.AddComponent(e, MakeDynamicBody(mass,
+                    isBox ? ComputeBoxInertia(mass, glm::vec3(size)) : ComputeSphereInertia(mass, size)));
+
+                ColliderComponent cc;
+                cc.shape = isBox ? ColliderShape::Box : ColliderShape::Sphere;
+                cc.size = { size, size, size };
+                scene.AddComponent(e, cc);
+
+                activeBoxes.push_back({ e, totalTime });
+            }
+        });
+
+    engine.SetRenderCallback([&](double /*alpha*/)
+        {
+            renderer.BeginFrame();
+            scene.RenderUpdateSystems();
+
+            if (drawContacts || drawNormals)
+            {
+                for (const auto& c : colSysPtr->GetContacts())
+                {
+                    for (int i = 0; i < c.pointCount; ++i)
+                    {
+                        if (drawContacts)
+                        {
+                            DebugDraw::Sphere(c.points[i], 0.05f, { 1.0f, 1.0f, 0.0f });
+                        }
+                        if (drawNormals)
+                        {
+                            DebugDraw::Line(c.points[i], c.points[i] + c.normal * 0.4f, { 1.0f, 0.0f, 0.0f });
+                        }
+                    }
+                }
+            }
+
+            renderer.FlushDebugDraw();
+            overlay.Render();
+            renderer.EndFrame();
         });
 
     engine.Run();

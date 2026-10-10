@@ -54,8 +54,9 @@ int main()
 
     scene.SetFixedDeltaTime(1.0 / 60.0);
 
-    // Iteratively add objects until we break the budget
-    while (currentAvgMs < targetMs && objCount < 1000)
+    // Iteratively add objects until we genuine exceed the 16.67ms 60Hz budget
+    constexpr int maxCap = 4000;
+    while (currentAvgMs < targetMs && objCount < maxCap)
     {
         // Add 10 objects
         for (int i = 0; i < 10; ++i)
@@ -63,7 +64,7 @@ int main()
             Entity e = scene.CreateEntity();
             TransformComponent tc;
             // Spawn spread out so they drop onto the pile
-            tc.position = { (i % 3) * 0.5f, 2.0f + objCount * 0.1f, (i / 3) * 0.5f };
+            tc.position = { (i % 3) * 0.5f, 2.0f + objCount * 0.05f, (i / 3) * 0.5f };
             scene.AddComponent(e, tc);
             scene.AddComponent(e, MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, { 0.4f, 0.4f, 0.4f })));
             ColliderComponent cc;
