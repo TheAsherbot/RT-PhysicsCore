@@ -14,7 +14,10 @@ namespace RT_PhysicsCore
 {
     /**
      * @class ComponentStorage
-     * @brief Strongly-typed contiguous storage container for component type T.
+     * @brief Flat sparse-set contiguous storage container for component type T.
+     *
+     * Maps entity IDs to packed components via a flat sparse index vector for
+     * O(1) direct lookup, insertion, and swap-and-pop removal without hash overhead.
      * @tparam T The component data type stored in this pool.
      */
     template<typename T>

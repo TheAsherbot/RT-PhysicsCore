@@ -25,22 +25,29 @@ engine loop, rendering, input, debug drawing. Physics lives in a separate
 - `Entity` = plain `uint32_t`, `0` = invalid. IDs recycled via a free-list
   (`DestroyEntity` pushes, `CreateEntity` pops before incrementing the
   counter).
-- Component storage = sparse set: dense `vector<T>` + parallel
-  `vector<Entity>` + `unordered_map<Entity, index>`. O(1) add/get/has;
-  remove is swap-and-pop (doesn't preserve order).
+- Component storage = true sparse set: dense `vector<T>` (components) +
+  parallel dense `vector<Entity>` (entity mapping) + flat sparse
+  `vector<size_t>` indexed directly by entity ID. True O(1) add/get/has/remove
+  with zero hash calculation and no heap node allocations; remove is
+  swap-and-pop (doesn't preserve component order).
 - Storages are type-erased behind an `IComponentStorage` virtual interface
   (`Has`/`Remove`) so `Scene` can hold many component types in one map and
   strip all of an entity's components without knowing their concrete
   types. (`unique_ptr<void>` doesn't work for this — `delete` on `void*` is
   ill-formed.)
-- `Query<Ts...>()` iterates the *first* listed type's storage, filters by
-  the rest — not the smallest storage. List the rarest component first for
-  speed.
+- `Query<Ts...>()` resolves all component storage pointers once upfront into a
+  tuple and short-circuits immediately if any requested storage is absent in
+  the scene. It then iterates the *first* listed type's storage and directly
+  checks presence on the cached storage pointers, eliminating all inner-loop
+  hash map lookups. List the rarest component first for optimal speed.
 - `ISystem` holds a `Scene&` injected once at construction; three virtual
   hooks (`Update`/`FixedUpdate`/`RenderUpdate`), empty by default —
   override only what you need.
-- `DestroyEntity` fixes up hierarchy links *before* removing components —
-  fix-up needs to read the entity's own `HierarchyComponent` first.
+- `DestroyEntity` removes the entity from the active list in O(1) via
+  swap-and-pop (using an internal entity-to-index sparse lookup in `Scene`),
+  fixes up hierarchy links *before* removing components (reading the entity's
+  own `HierarchyComponent` first), strips components across all storages, and
+  recycles the entity ID into the free-list.
 
 ## Transform Hierarchy
 

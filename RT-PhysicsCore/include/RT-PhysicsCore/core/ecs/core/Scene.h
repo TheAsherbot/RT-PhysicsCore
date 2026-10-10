@@ -44,7 +44,7 @@ namespace RT_PhysicsCore
         Entity CreateEntity();
 
         /**
-         * @brief Destroys an entity, removes all its components, and updates hierarchy links.
+         * @brief Destroys an entity in O(1) via swap-and-pop, removes all its components, and updates hierarchy links.
          * @param entity The entity handle to destroy.
          */
         void DestroyEntity(Entity entity);
@@ -101,8 +101,10 @@ namespace RT_PhysicsCore
 
         /**
          * @brief Queries all entities possessing all requested component types.
-         * @note Iteration order is driven by the FIRST type specified in Ts...
-         *       For optimal performance, specify the rarest component type first.
+         * @note Resolves all storage pointers once upfront and short-circuits if any
+         *       requested storage does not exist. Iteration order is driven by the FIRST
+         *       type specified in Ts... For optimal performance, specify the rarest
+         *       component type first.
          * @tparam Ts List of component types that matching entities must have.
          * @return Vector of entities matching all component requirements.
          */
