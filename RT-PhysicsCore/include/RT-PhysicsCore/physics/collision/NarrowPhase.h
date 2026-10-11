@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
+#include "RT-PhysicsCore/core/math/MathTypes.h"
 #include "RT-PhysicsCore/physics/collision/Contact.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 
@@ -21,17 +21,23 @@ namespace RT_PhysicsCore
     struct ColliderPose
     {
         ColliderShape shape{ ColliderShape::Box }; ///< The geometric primitive shape.
-        glm::vec3 size{ 1.0f };                    ///< Dimensions / extents.
-        glm::vec3 position{ 0.0f };                ///< World position of collider origin.
-        glm::mat3 rotation{ 1.0f };                ///< World orientation matrix.
+        Vec3 size{ 1.0, 1.0, 1.0 };                ///< Dimensions / extents.
+        Vec3 position{ 0.0, 0.0, 0.0 };            ///< World position of collider origin.
+        Mat3 rotation{ 1.0 };                      ///< World orientation matrix.
     };
 
     /**
-     * @brief Tests for intersection between two oriented geometric colliders.
+     * @brief Tests for intersection or speculative proximity between two oriented geometric colliders.
+     *
+     * Returns true if bodies are overlapping (signedDistance < 0) or within the speculative margin
+     * (0 <= signedDistance <= speculativeMargin). Automatically reduces generated manifolds down
+     * to at most 4 extremal points.
+     *
      * @param a World pose and geometry of first collider.
      * @param b World pose and geometry of second collider.
      * @param[out] outContact Populated collision manifold (normal points from a to b).
-     * @return True if shapes overlap and generate contacts; false otherwise.
+     * @param speculativeMargin Maximum positive gap distance within which speculative contacts are formed.
+     * @return True if shapes generate contacts within the threshold; false otherwise.
      */
-    bool TestCollision(const ColliderPose& a, const ColliderPose& b, Contact& outContact);
+    bool TestCollision(const ColliderPose& a, const ColliderPose& b, Contact& outContact, Real speculativeMargin = 0.0);
 }

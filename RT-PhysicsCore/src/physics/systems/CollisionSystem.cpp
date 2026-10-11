@@ -1,6 +1,6 @@
 /**
  * @file CollisionSystem.cpp
- * @brief Implementation of broad-phase pruning and narrow-phase collision pipeline.
+ * @brief Implementation of broad-phase swept AABB filtering and narrow-phase signed collision pipeline.
  */
 
 #include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
@@ -8,11 +8,10 @@
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/components/PhysicsMaterialComponent.h"
+#include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/collision/AABB.h"
 #include "RT-PhysicsCore/physics/collision/NarrowPhase.h"
 #include "RT-PhysicsCore/physics/PhysicsMaterial.h"
-
-#include <glm/gtc/quaternion.hpp>
 
 namespace RT_PhysicsCore
 {
@@ -21,7 +20,7 @@ namespace RT_PhysicsCore
         struct Entry
         {
             Entity entity;
-            AABB aabb;
+            AABB sweptAabb;
             ColliderPose pose;
             MaterialId material;
         };
@@ -36,9 +35,25 @@ namespace RT_PhysicsCore
         return contacts;
     }
 
-    void CollisionSystem::FixedUpdate(double /*dt*/)
+    std::vector<Contact>& CollisionSystem::GetContacts()
+    {
+        return contacts;
+    }
+
+    ContactCache& CollisionSystem::GetContactCache()
+    {
+        return contactCache;
+    }
+
+    void CollisionSystem::FixedUpdate(double dt)
+    {
+        Detect(dt, 0.002);
+    }
+
+    void CollisionSystem::Detect(double h, Real speculativeMargin)
     {
         contacts.clear();
+        contactCache.BeginSubstep();
 
         auto entities = scene.Query<TransformComponent, ColliderComponent>();
 
@@ -63,7 +78,14 @@ namespace RT_PhysicsCore
             auto* material = scene.GetComponent<PhysicsMaterialComponent>(e);
             MaterialId materialId = material ? material->material : MaterialId::Default;
 
-            entries.push_back({ e, ComputeWorldAABB(*collider, transform->position, transform->rotation), pose, materialId });
+            AABB baseAabb = ComputeWorldAABB(*collider, transform->position, transform->rotation);
+            baseAabb = InflateAABB(baseAabb, speculativeMargin);
+
+            auto* body = scene.GetComponent<RigidBodyComponent>(e);
+            Vec3 displacement = (body && body->invMass > 0.0) ? (body->velocity * h) : Vec3(0.0);
+            AABB sweptAabb = ComputeSweptAABB(baseAabb, displacement);
+
+            entries.push_back({ e, sweptAabb, pose, materialId });
         }
 
         // Naive O(n^2) broad phase - fine at current body counts. Swap in
@@ -74,13 +96,13 @@ namespace RT_PhysicsCore
         {
             for (size_t j = i + 1; j < entries.size(); ++j)
             {
-                if (!Overlaps(entries[i].aabb, entries[j].aabb))
+                if (!Overlaps(entries[i].sweptAabb, entries[j].sweptAabb))
                 {
                     continue;
                 }
 
                 Contact contact;
-                if (TestCollision(entries[i].pose, entries[j].pose, contact))
+                if (TestCollision(entries[i].pose, entries[j].pose, contact, speculativeMargin))
                 {
                     contact.a = entries[i].entity;
                     contact.b = entries[j].entity;
@@ -90,9 +112,13 @@ namespace RT_PhysicsCore
                     contact.staticFriction = mat.staticFriction;
                     contact.kineticFriction = mat.kineticFriction;
 
+                    // Correlate against persistent cache for warm starting
+                    contactCache.MatchAndWarmStart(contact);
                     contacts.push_back(contact);
                 }
             }
         }
+
+        contactCache.EndSubstep();
     }
 }

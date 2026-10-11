@@ -1,6 +1,7 @@
 # RT-PhysicsCore\src\core\CMakeLists.txt 
 
 add_subdirectory(ecs)
+add_subdirectory(math)
 
 file(GLOB CORE_SRC *.cpp *.h)
 

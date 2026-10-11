@@ -4,40 +4,42 @@
  */
 
 #include "RT-PhysicsCore/physics/collision/AABB.h"
+#include <algorithm>
+#include <cmath>
 
 namespace RT_PhysicsCore
 {
     namespace
     {
-        AABB BoxAABB(const glm::vec3& halfExtents, const glm::vec3& position, const glm::mat3& rotation)
+        AABB BoxAABB(const Vec3& halfExtents, const Vec3& position, const Mat3& rotation)
         {
-            glm::vec3 extent = glm::abs(rotation[0]) * halfExtents.x
+            Vec3 extent = glm::abs(rotation[0]) * halfExtents.x
                 + glm::abs(rotation[1]) * halfExtents.y
                 + glm::abs(rotation[2]) * halfExtents.z;
             return { position - extent, position + extent };
         }
 
-        AABB SphereAABB(float radius, const glm::vec3& position)
+        AABB SphereAABB(Real radius, const Vec3& position)
         {
-            glm::vec3 r(radius);
+            Vec3 r(radius);
             return { position - r, position + r };
         }
 
-        AABB CapsuleAABB(float radius, float halfLength, const glm::vec3& position, const glm::mat3& rotation)
+        AABB CapsuleAABB(Real radius, Real halfLength, const Vec3& position, const Mat3& rotation)
         {
-            glm::vec3 axis = rotation[1] * halfLength;
-            glm::vec3 a = position - axis;
-            glm::vec3 b = position + axis;
+            Vec3 axis = rotation[1] * halfLength;
+            Vec3 a = position - axis;
+            Vec3 b = position + axis;
 
-            glm::vec3 r(radius);
+            Vec3 r(radius);
             return { glm::min(a, b) - r, glm::max(a, b) + r };
         }
     }
 
-    AABB ComputeWorldAABB(const ColliderComponent& collider, const glm::vec3& position, const glm::quat& rotation)
+    AABB ComputeWorldAABB(const ColliderComponent& collider, const Vec3& position, const Quat& rotation)
     {
-        glm::mat3 r = glm::mat3_cast(rotation);
-        glm::vec3 center = position + r * collider.offset;
+        Mat3 r = glm::mat3_cast(rotation);
+        Vec3 center = position + r * collider.offset;
 
         switch (collider.shape)
         {
@@ -46,6 +48,20 @@ namespace RT_PhysicsCore
         case ColliderShape::Capsule: return CapsuleAABB(collider.size.x, collider.size.y, center, r);
         }
         return { center, center };
+    }
+
+    AABB InflateAABB(const AABB& aabb, Real margin)
+    {
+        Vec3 m(margin);
+        return { aabb.min - m, aabb.max + m };
+    }
+
+    AABB ComputeSweptAABB(const AABB& aabb, const Vec3& displacement)
+    {
+        AABB swept;
+        swept.min = glm::min(aabb.min, aabb.min + displacement);
+        swept.max = glm::max(aabb.max, aabb.max + displacement);
+        return swept;
     }
 
     bool Overlaps(const AABB& a, const AABB& b)

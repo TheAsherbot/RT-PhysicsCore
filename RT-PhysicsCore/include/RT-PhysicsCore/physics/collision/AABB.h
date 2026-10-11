@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include "RT-PhysicsCore/core/math/MathTypes.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 
 namespace RT_PhysicsCore
@@ -20,8 +19,8 @@ namespace RT_PhysicsCore
      */
     struct AABB
     {
-        glm::vec3 min{ 0.0f }; ///< Minimum extent corner (lower bounds on X, Y, Z).
-        glm::vec3 max{ 0.0f }; ///< Maximum extent corner (upper bounds on X, Y, Z).
+        Vec3 min{ 0.0, 0.0, 0.0 }; ///< Minimum extent corner (lower bounds on X, Y, Z).
+        Vec3 max{ 0.0, 0.0, 0.0 }; ///< Maximum extent corner (upper bounds on X, Y, Z).
     };
 
     /**
@@ -35,7 +34,23 @@ namespace RT_PhysicsCore
      * @param rotation World-space orientation of the parent entity.
      * @return World-space AABB bounding volume.
      */
-    AABB ComputeWorldAABB(const ColliderComponent& collider, const glm::vec3& position, const glm::quat& rotation);
+    AABB ComputeWorldAABB(const ColliderComponent& collider, const Vec3& position, const Quat& rotation);
+
+    /**
+     * @brief Expands an AABB symmetrically along all three axes by a uniform margin distance.
+     * @param aabb Bounding box to inflate.
+     * @param margin Margin expansion distance in meters.
+     * @return Inflated AABB bounding volume.
+     */
+    AABB InflateAABB(const AABB& aabb, Real margin);
+
+    /**
+     * @brief Computes a swept bounding box enclosing both the initial AABB and its translated end position.
+     * @param aabb Initial static bounding box.
+     * @param displacement Total linear displacement vector across the substep.
+     * @return Swept enclosing AABB.
+     */
+    AABB ComputeSweptAABB(const AABB& aabb, const Vec3& displacement);
 
     /**
      * @brief Tests whether two Axis-Aligned Bounding Boxes overlap along all three axes.

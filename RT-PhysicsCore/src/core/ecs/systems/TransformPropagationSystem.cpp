@@ -23,17 +23,17 @@ namespace RT_PhysicsCore
             if (!hierarchy || hierarchy->parent == invalidEntity)
             {
                 Propagate(e,
-                    glm::vec3(0.0f),
-                    glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
-                    glm::vec3(1.0f));
+                    Vec3(0.0f),
+                    Quat(1.0f, 0.0f, 0.0f, 0.0f),
+                    Vec3(1.0f));
             }
         }
     }
 
     void TransformPropagationSystem::Propagate(Entity entity,
-        const glm::vec3& parentWorldPos,
-        const glm::quat& parentWorldRot,
-        const glm::vec3& parentWorldScale)
+        const Vec3& parentWorldPos,
+        const Quat& parentWorldRot,
+        const Vec3& parentWorldScale)
     {
         auto* local = scene.GetComponent<TransformComponent>(entity);
         if (!local)
@@ -42,9 +42,9 @@ namespace RT_PhysicsCore
         }
 
         // worldTransform(child) = worldTransform(parent) * localTransform(child)
-        glm::vec3 worldPos = parentWorldPos + parentWorldRot * (parentWorldScale * local->position);
-        glm::quat worldRot = parentWorldRot * local->rotation;
-        glm::vec3 worldScale = parentWorldScale * local->scale;
+        Vec3 worldPos = parentWorldPos + parentWorldRot * (parentWorldScale * local->position);
+        Quat worldRot = parentWorldRot * local->rotation;
+        Vec3 worldScale = parentWorldScale * local->scale;
 
         WorldTransformComponent world;
         world.worldPosition = worldPos;

@@ -1,44 +1,54 @@
 /**
  * @file Contact.h
- * @brief Collision manifold and contact point structures.
- *
- * Encapsulates contact manifold geometry between two colliding entities, including
- * normal direction, manifold points, penetration depths, and cached interaction parameters.
+ * @brief Collision manifold and high-precision contact point definitions.
  */
 
 #pragma once
 
-#include <glm/glm.hpp>
 #include "RT-PhysicsCore/core/ecs/core/Entity.h"
+#include "RT-PhysicsCore/core/math/MathTypes.h"
 
 namespace RT_PhysicsCore
 {
     /**
-     * @brief Maximum number of contact points supported per collision manifold.
-     * @note Polygon face clipping during box-box collisions can produce up to 8 vertices.
+     * @brief Maximum number of active contact points retained per manifold.
      */
-    constexpr int kMaxContactPoints = 8;
+    constexpr int kMaxContactPoints = 4;
+
+    /**
+     * @struct ContactPoint
+     * @brief Represents an individual contact point within a manifold.
+     */
+    struct ContactPoint
+    {
+        Vec3 position{ 0.0, 0.0, 0.0 };         ///< World-space contact position.
+        Vec3 localAnchorA{ 0.0, 0.0, 0.0 };     ///< Local position relative to entity A center of mass.
+        Vec3 localAnchorB{ 0.0, 0.0, 0.0 };     ///< Local position relative to entity B center of mass.
+        Real signedDistance{ 0.0 };             ///< Signed separation: <0 is penetration, >0 is speculative gap.
+        Real normalImpulse{ 0.0 };              ///< Accumulated normal constraint impulse.
+        Real tangentImpulse1{ 0.0 };            ///< Accumulated tangent impulse along tangent direction 1.
+        Real tangentImpulse2{ 0.0 };            ///< Accumulated tangent impulse along tangent direction 2.
+        bool isStuck{ false };                  ///< Flag indicating whether the contact is in static friction regime.
+    };
 
     /**
      * @struct Contact
-     * @brief Manifold representing physical contact between two colliding entities.
-     *
-     * The normal points directed from entity `a` toward entity `b`. Multiple points
-     * allow planar resting contacts (such as a box on a plane) to resist rotational torques.
+     * @brief Manifold representing persistent contact between two entities.
      */
     struct Contact
     {
-        Entity a{}; ///< First entity involved in the collision.
-        Entity b{}; ///< Second entity involved in the collision.
+        Entity a{};                             ///< First entity in the interaction.
+        Entity b{};                             ///< Second entity in the interaction.
 
-        glm::vec3 normal{ 0.0f, 1.0f, 0.0f };               ///< Unit normal pointing from entity a to entity b.
-        glm::vec3 points[kMaxContactPoints]{};               ///< World-space contact positions.
-        float penetrations[kMaxContactPoints]{};            ///< Penetration depth at each contact point (positive).
-        int pointCount{ 0 };                                ///< Number of active contact points in the manifold [0, 8].
+        Vec3 normal{ 0.0, 1.0, 0.0 };           ///< Unit contact normal pointing from entity A toward entity B.
+        Vec3 tangent1{ 1.0, 0.0, 0.0 };         ///< Primary orthonormal tangent vector.
+        Vec3 tangent2{ 0.0, 0.0, 1.0 };         ///< Secondary orthonormal tangent vector.
 
-        // Combined material properties pre-calculated once during collision detection
-        float restitution{ 0.0f };                          ///< Effective coefficient of restitution for this contact.
-        float staticFriction{ 0.0f };                       ///< Effective coefficient of static friction.
-        float kineticFriction{ 0.0f };                      ///< Effective coefficient of kinetic friction.
+        ContactPoint points[kMaxContactPoints]{}; ///< Array of reduced contact points.
+        int pointCount{ 0 };                    ///< Number of valid contact points in manifold [0, 4].
+
+        Real restitution{ 0.0 };                ///< Combined coefficient of restitution.
+        Real staticFriction{ 0.0 };             ///< Combined coefficient of static friction.
+        Real kineticFriction{ 0.0 };            ///< Combined coefficient of kinetic friction.
     };
 }

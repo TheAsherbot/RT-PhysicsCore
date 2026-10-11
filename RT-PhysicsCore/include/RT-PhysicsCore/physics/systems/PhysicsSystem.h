@@ -1,21 +1,18 @@
 /**
  * @file PhysicsSystem.h
- * @brief Rigid body numerical integration system using symplectic Euler and DLM rotational splitting.
+ * @brief Rigid body numerical integration system with split velocity and position passes.
  */
 
 #pragma once
 
 #include "RT-PhysicsCore/core/ecs/core/System.h"
-#include <glm/glm.hpp>
+#include "RT-PhysicsCore/core/math/MathTypes.h"
 
 namespace RT_PhysicsCore
 {
     /**
      * @class PhysicsSystem
-     * @brief Evaluates Newtonian rigid body dynamics across active physics entities.
-     *
-     * Integrates linear motion via semi-implicit Euler and rotational dynamics
-     * via the Dullweber-Leimkuhler-McLachlan (DLM) symplectic splitting scheme.
+     * @brief Evaluates Newtonian rigid body dynamics using split symplectic Euler and DLM rotation splitting.
      */
     class PhysicsSystem : public ISystem
     {
@@ -33,22 +30,30 @@ namespace RT_PhysicsCore
         void FixedUpdate(double dt) override;
 
         /**
-         * @brief Sets the global gravitational acceleration vector.
-         *
-         * Applied as `forceAccum += mass * gravity` rather than direct velocity modification,
-         * ensuring correct mass-independent free-fall acceleration.
-         *
-         * @param gravity Gravitational acceleration in m/s^2 (default: [0, -9.80665, 0]).
+         * @brief Integrates external forces and torques into linear and angular momentum.
+         * @param h Substep duration in seconds.
          */
-        void SetGravity(const glm::vec3& gravity);
+        void IntegrateVelocities(double h);
+
+        /**
+         * @brief Integrates positions, DLM rotations, and pseudo-velocity displacements.
+         * @param h Substep duration in seconds.
+         */
+        void IntegratePositions(double h);
+
+        /**
+         * @brief Sets the global gravitational acceleration vector.
+         * @param gravity Gravitational acceleration in m/s^2.
+         */
+        void SetGravity(const Vec3& gravity);
 
         /**
          * @brief Retrieves the current global gravitational acceleration vector.
          * @return Const reference to gravity vector in m/s^2.
          */
-        const glm::vec3& GetGravity() const;
+        const Vec3& GetGravity() const;
 
     private:
-        glm::vec3 gravity{ 0.0f, -9.80665f, 0.0f };
+        Vec3 gravity{ 0.0, -9.80665, 0.0 };
     };
 }

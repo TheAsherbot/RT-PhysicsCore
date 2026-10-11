@@ -1,16 +1,11 @@
 /**
  * @file TransformComponent.h
- * @brief Local and world-space spatial transform representations.
- *
- * TransformComponent defines local pose relative to parent, while
- * WorldTransformComponent stores absolute space coordinates calculated
- * by TransformPropagationSystem.
+ * @brief High-precision spatial transform representations for local and world coordinates.
  */
 
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include "RT-PhysicsCore/core/math/MathTypes.h"
 
 namespace RT_PhysicsCore
 {
@@ -20,9 +15,9 @@ namespace RT_PhysicsCore
      */
     struct TransformComponent
     {
-        glm::vec3 position{ 0.0f, 0.0f, 0.0f };      ///< Local position offset.
-        glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f }; ///< Local rotation quaternion (w, x, y, z).
-        glm::vec3 scale{ 1.0f, 1.0f, 1.0f };         ///< Local scale factors.
+        Vec3 position{ 0.0, 0.0, 0.0 };         ///< Local position offset in meters.
+        Quat rotation{ 1.0, 0.0, 0.0, 0.0 };    ///< Local orientation quaternion (w, x, y, z).
+        Vec3 scale{ 1.0, 1.0, 1.0 };            ///< Local scaling factors along local axes.
     };
 
     /**
@@ -31,8 +26,8 @@ namespace RT_PhysicsCore
      */
     struct WorldTransformComponent
     {
-        glm::vec3 worldPosition{ 0.0f, 0.0f, 0.0f };      ///< World-space origin position.
-        glm::quat worldRotation{ 1.0f, 0.0f, 0.0f, 0.0f }; ///< World-space absolute orientation.
-        glm::vec3 worldScale{ 1.0f, 1.0f, 1.0f };         ///< World-space compound scale.
+        Vec3 worldPosition{ 0.0, 0.0, 0.0 };         ///< World-space origin position in meters.
+        Quat worldRotation{ 1.0, 0.0, 0.0, 0.0 };    ///< World-space absolute orientation quaternion.
+        Vec3 worldScale{ 1.0, 1.0, 1.0 };            ///< World-space compound scale factors.
     };
 }

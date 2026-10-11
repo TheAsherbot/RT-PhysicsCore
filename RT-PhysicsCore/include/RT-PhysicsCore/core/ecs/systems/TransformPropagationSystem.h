@@ -5,8 +5,7 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include "RT-PhysicsCore/core/math/MathTypes.h"
 #include "RT-PhysicsCore/core/ecs/core/System.h"
 #include "RT-PhysicsCore/core/ecs/core/Entity.h"
 
@@ -39,8 +38,8 @@ namespace RT_PhysicsCore
          * @param parentWorldScale Accumulated parent world scale.
          */
         void Propagate(Entity entity,
-            const glm::vec3& parentWorldPos,
-            const glm::quat& parentWorldRot,
-            const glm::vec3& parentWorldScale);
+            const Vec3& parentWorldPos,
+            const Quat& parentWorldRot,
+            const Vec3& parentWorldScale);
     };
 }
