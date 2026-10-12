@@ -122,4 +122,44 @@ namespace RT_PhysicsCore
         cache.clear();
         currentSubstepIndex = 0;
     }
+
+    ContactPoint::operator const Vec3& () const
+    {
+        return position;
+    }
+
+    ContactPoint::operator Vec3& ()
+    {
+        return position;
+    }
+
+    ContactPoint::operator glm::vec3() const
+    {
+        return static_cast<glm::vec3>(position);
+    }
+
+    ContactPoint::operator glm::dvec3() const
+    {
+        return static_cast<glm::dvec3>(position);
+    }
+
+    Vec3 operator+(const ContactPoint& cp, const Vec3& v)
+    {
+        return cp.position + v;
+    }
+
+    Vec3 operator+(const Vec3& v, const ContactPoint& cp)
+    {
+        return v + cp.position;
+    }
+
+    Vec3 operator-(const ContactPoint& cp, const Vec3& v)
+    {
+        return cp.position - v;
+    }
+
+    Vec3 operator-(const Vec3& v, const ContactPoint& cp)
+    {
+        return v - cp.position;
+    }
 }

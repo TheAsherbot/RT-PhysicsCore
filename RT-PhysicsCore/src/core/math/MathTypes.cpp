@@ -73,6 +73,18 @@ namespace RT_PhysicsCore
         return Vec3(x * inv, y * inv, z * inv);
     }
 
+    Vec3 Vec3::operator*(float scalar) const
+    {
+        Real s = static_cast<Real>(scalar);
+        return Vec3(x * s, y * s, z * s);
+    }
+
+    Vec3 Vec3::operator/(float scalar) const
+    {
+        Real inv = 1.0 / static_cast<Real>(scalar);
+        return Vec3(x * inv, y * inv, z * inv);
+    }
+
     Vec3 Vec3::operator*(const Vec3& other) const
     {
         return Vec3(x * other.x, y * other.y, z * other.z);
@@ -121,6 +133,24 @@ namespace RT_PhysicsCore
         return *this;
     }
 
+    Vec3& Vec3::operator*=(float scalar)
+    {
+        Real s = static_cast<Real>(scalar);
+        x *= s;
+        y *= s;
+        z *= s;
+        return *this;
+    }
+
+    Vec3& Vec3::operator/=(float scalar)
+    {
+        Real inv = 1.0 / static_cast<Real>(scalar);
+        x *= inv;
+        y *= inv;
+        z *= inv;
+        return *this;
+    }
+
     Vec3& Vec3::operator*=(const Vec3& other)
     {
         x *= other.x;
@@ -150,6 +180,92 @@ namespace RT_PhysicsCore
     Vec3 operator*(Real scalar, const Vec3& v)
     {
         return Vec3(scalar * v.x, scalar * v.y, scalar * v.z);
+    }
+
+    Vec3 operator*(float scalar, const Vec3& v)
+    {
+        Real s = static_cast<Real>(scalar);
+        return Vec3(s * v.x, s * v.y, s * v.z);
+    }
+
+    Vec3 operator+(const Vec3& a, const glm::vec3& b)
+    {
+        return Vec3(a.x + static_cast<Real>(b.x), a.y + static_cast<Real>(b.y), a.z + static_cast<Real>(b.z));
+    }
+
+    Vec3 operator+(const glm::vec3& a, const Vec3& b)
+    {
+        return Vec3(static_cast<Real>(a.x) + b.x, static_cast<Real>(a.y) + b.y, static_cast<Real>(a.z) + b.z);
+    }
+
+    Vec3 operator-(const Vec3& a, const glm::vec3& b)
+    {
+        return Vec3(a.x - static_cast<Real>(b.x), a.y - static_cast<Real>(b.y), a.z - static_cast<Real>(b.z));
+    }
+
+    Vec3 operator-(const glm::vec3& a, const Vec3& b)
+    {
+        return Vec3(static_cast<Real>(a.x) - b.x, static_cast<Real>(a.y) - b.y, static_cast<Real>(a.z) - b.z);
+    }
+
+    Vec3 operator*(const Vec3& a, const glm::vec3& b)
+    {
+        return Vec3(a.x * static_cast<Real>(b.x), a.y * static_cast<Real>(b.y), a.z * static_cast<Real>(b.z));
+    }
+
+    Vec3 operator*(const glm::vec3& a, const Vec3& b)
+    {
+        return Vec3(static_cast<Real>(a.x) * b.x, static_cast<Real>(a.y) * b.y, static_cast<Real>(a.z) * b.z);
+    }
+
+    Vec3 operator/(const Vec3& a, const glm::vec3& b)
+    {
+        return Vec3(a.x / static_cast<Real>(b.x), a.y / static_cast<Real>(b.y), a.z / static_cast<Real>(b.z));
+    }
+
+    Vec3 operator/(const glm::vec3& a, const Vec3& b)
+    {
+        return Vec3(static_cast<Real>(a.x) / b.x, static_cast<Real>(a.y) / b.y, static_cast<Real>(a.z) / b.z);
+    }
+
+    Vec3 operator+(const Vec3& a, const glm::dvec3& b)
+    {
+        return Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
+
+    Vec3 operator+(const glm::dvec3& a, const Vec3& b)
+    {
+        return Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
+
+    Vec3 operator-(const Vec3& a, const glm::dvec3& b)
+    {
+        return Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+
+    Vec3 operator-(const glm::dvec3& a, const Vec3& b)
+    {
+        return Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+
+    Vec3 operator*(const Vec3& a, const glm::dvec3& b)
+    {
+        return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+    }
+
+    Vec3 operator*(const glm::dvec3& a, const Vec3& b)
+    {
+        return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+    }
+
+    Vec3 operator/(const Vec3& a, const glm::dvec3& b)
+    {
+        return Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
+    }
+
+    Vec3 operator/(const glm::dvec3& a, const Vec3& b)
+    {
+        return Vec3(a.x / b.x, a.y / b.y, a.z / b.z);
     }
 
     Vec3 operator*(const Mat3& m, const Vec3& v)
@@ -369,5 +485,195 @@ namespace glm
     {
         glm::dquat dq = glm::angleAxis(angle, static_cast<glm::dvec3>(axis));
         return RT_PhysicsCore::Quat(dq.w, dq.x, dq.y, dq.z);
+    }
+
+    RT_PhysicsCore::Real length(const RT_PhysicsCore::Quat& q)
+    {
+        return std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+    }
+
+    RT_PhysicsCore::Real length2(const RT_PhysicsCore::Quat& q)
+    {
+        return q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
+    }
+
+    vec3 operator*(const vec3& v, RT_PhysicsCore::Real scalar)
+    {
+        float s = static_cast<float>(scalar);
+        return vec3(v.x * s, v.y * s, v.z * s);
+    }
+
+    vec3 operator*(RT_PhysicsCore::Real scalar, const vec3& v)
+    {
+        float s = static_cast<float>(scalar);
+        return vec3(v.x * s, v.y * s, v.z * s);
+    }
+
+    vec3 operator/(const vec3& v, RT_PhysicsCore::Real scalar)
+    {
+        float inv = 1.0f / static_cast<float>(scalar);
+        return vec3(v.x * inv, v.y * inv, v.z * inv);
+    }
+
+    dvec3 operator*(const dvec3& v, float scalar)
+    {
+        double s = static_cast<double>(scalar);
+        return dvec3(v.x * s, v.y * s, v.z * s);
+    }
+
+    dvec3 operator*(float scalar, const dvec3& v)
+    {
+        double s = static_cast<double>(scalar);
+        return dvec3(v.x * s, v.y * s, v.z * s);
+    }
+
+    dvec3 operator/(const dvec3& v, float scalar)
+    {
+        double inv = 1.0 / static_cast<double>(scalar);
+        return dvec3(v.x * inv, v.y * inv, v.z * inv);
+    }
+
+    vec2 operator*(const vec2& v, RT_PhysicsCore::Real scalar)
+    {
+        float s = static_cast<float>(scalar);
+        return vec2(v.x * s, v.y * s);
+    }
+
+    vec2 operator*(RT_PhysicsCore::Real scalar, const vec2& v)
+    {
+        float s = static_cast<float>(scalar);
+        return vec2(v.x * s, v.y * s);
+    }
+
+    vec2 operator/(const vec2& v, RT_PhysicsCore::Real scalar)
+    {
+        float inv = 1.0f / static_cast<float>(scalar);
+        return vec2(v.x * inv, v.y * inv);
+    }
+
+    dvec2 operator*(const dvec2& v, float scalar)
+    {
+        double s = static_cast<double>(scalar);
+        return dvec2(v.x * s, v.y * s);
+    }
+
+    dvec2 operator*(float scalar, const dvec2& v)
+    {
+        double s = static_cast<double>(scalar);
+        return dvec2(v.x * s, v.y * s);
+    }
+
+    dvec2 operator/(const dvec2& v, float scalar)
+    {
+        double inv = 1.0 / static_cast<double>(scalar);
+        return dvec2(v.x * inv, v.y * inv);
+    }
+
+    vec4 operator*(const vec4& v, RT_PhysicsCore::Real scalar)
+    {
+        float s = static_cast<float>(scalar);
+        return vec4(v.x * s, v.y * s, v.z * s, v.w * s);
+    }
+
+    vec4 operator*(RT_PhysicsCore::Real scalar, const vec4& v)
+    {
+        float s = static_cast<float>(scalar);
+        return vec4(v.x * s, v.y * s, v.z * s, v.w * s);
+    }
+
+    vec4 operator/(const vec4& v, RT_PhysicsCore::Real scalar)
+    {
+        float inv = 1.0f / static_cast<float>(scalar);
+        return vec4(v.x * inv, v.y * inv, v.z * inv, v.w * inv);
+    }
+
+    dvec4 operator*(const dvec4& v, float scalar)
+    {
+        double s = static_cast<double>(scalar);
+        return dvec4(v.x * s, v.y * s, v.z * s, v.w * s);
+    }
+
+    dvec4 operator*(float scalar, const dvec4& v)
+    {
+        double s = static_cast<double>(scalar);
+        return dvec4(v.x * s, v.y * s, v.z * s, v.w * s);
+    }
+
+    dvec4 operator/(const dvec4& v, float scalar)
+    {
+        double inv = 1.0 / static_cast<double>(scalar);
+        return dvec4(v.x * inv, v.y * inv, v.z * inv, v.w * inv);
+    }
+
+    mat3 operator*(const mat3& m, RT_PhysicsCore::Real scalar)
+    {
+        float s = static_cast<float>(scalar);
+        return mat3(m[0] * s, m[1] * s, m[2] * s);
+    }
+
+    mat3 operator*(RT_PhysicsCore::Real scalar, const mat3& m)
+    {
+        float s = static_cast<float>(scalar);
+        return mat3(m[0] * s, m[1] * s, m[2] * s);
+    }
+
+    mat3 operator/(const mat3& m, RT_PhysicsCore::Real scalar)
+    {
+        float inv = 1.0f / static_cast<float>(scalar);
+        return mat3(m[0] * inv, m[1] * inv, m[2] * inv);
+    }
+
+    dmat3 operator*(const dmat3& m, float scalar)
+    {
+        double s = static_cast<double>(scalar);
+        return dmat3(m[0] * s, m[1] * s, m[2] * s);
+    }
+
+    dmat3 operator*(float scalar, const dmat3& m)
+    {
+        double s = static_cast<double>(scalar);
+        return dmat3(m[0] * s, m[1] * s, m[2] * s);
+    }
+
+    dmat3 operator/(const dmat3& m, float scalar)
+    {
+        double inv = 1.0 / static_cast<double>(scalar);
+        return dmat3(m[0] * inv, m[1] * inv, m[2] * inv);
+    }
+
+    mat4 operator*(const mat4& m, RT_PhysicsCore::Real scalar)
+    {
+        float s = static_cast<float>(scalar);
+        return mat4(m[0] * s, m[1] * s, m[2] * s, m[3] * s);
+    }
+
+    mat4 operator*(RT_PhysicsCore::Real scalar, const mat4& m)
+    {
+        float s = static_cast<float>(scalar);
+        return mat4(m[0] * s, m[1] * s, m[2] * s, m[3] * s);
+    }
+
+    mat4 operator/(const mat4& m, RT_PhysicsCore::Real scalar)
+    {
+        float inv = 1.0f / static_cast<float>(scalar);
+        return mat4(m[0] * inv, m[1] * inv, m[2] * inv, m[3] * inv);
+    }
+
+    dmat4 operator*(const dmat4& m, float scalar)
+    {
+        double s = static_cast<double>(scalar);
+        return dmat4(m[0] * s, m[1] * s, m[2] * s, m[3] * s);
+    }
+
+    dmat4 operator*(float scalar, const dmat4& m)
+    {
+        double s = static_cast<double>(scalar);
+        return dmat4(m[0] * s, m[1] * s, m[2] * s, m[3] * s);
+    }
+
+    dmat4 operator/(const dmat4& m, float scalar)
+    {
+        double inv = 1.0 / static_cast<double>(scalar);
+        return dmat4(m[0] * inv, m[1] * inv, m[2] * inv, m[3] * inv);
     }
 }

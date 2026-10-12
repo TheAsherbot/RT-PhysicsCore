@@ -119,6 +119,20 @@ namespace RT_PhysicsCore
         Vec3 operator/(Real scalar) const;
 
         /**
+         * @brief Single-precision scalar multiplication operator.
+         * @param scalar Multiplier factor.
+         * @return Scaled vector.
+         */
+        Vec3 operator*(float scalar) const;
+
+        /**
+         * @brief Single-precision scalar division operator.
+         * @param scalar Divisor factor.
+         * @return Scaled vector.
+         */
+        Vec3 operator/(float scalar) const;
+
+        /**
          * @brief Component-wise vector multiplication operator.
          * @param other Vector multiplier.
          * @return Component-wise product.
@@ -167,6 +181,20 @@ namespace RT_PhysicsCore
         Vec3& operator/=(Real scalar);
 
         /**
+         * @brief Compound single-precision scalar multiplication assignment operator.
+         * @param scalar Multiplier factor.
+         * @return Reference to this vector.
+         */
+        Vec3& operator*=(float scalar);
+
+        /**
+         * @brief Compound single-precision scalar division assignment operator.
+         * @param scalar Divisor factor.
+         * @return Reference to this vector.
+         */
+        Vec3& operator/=(float scalar);
+
+        /**
          * @brief Compound component-wise vector multiplication assignment operator.
          * @param other Vector multiplier.
          * @return Reference to this vector.
@@ -202,6 +230,142 @@ namespace RT_PhysicsCore
      * @return Scaled vector.
      */
     Vec3 operator*(Real scalar, const Vec3& v);
+
+    /**
+     * @brief Left single-precision scalar multiplication operator.
+     * @param scalar Multiplier factor.
+     * @param v Vector to scale.
+     * @return Scaled vector.
+     */
+    Vec3 operator*(float scalar, const Vec3& v);
+
+    /**
+     * @brief Addition operator between high-precision vector and single-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Single-precision GLM vector.
+     * @return High-precision sum vector.
+     */
+    Vec3 operator+(const Vec3& a, const glm::vec3& b);
+
+    /**
+     * @brief Addition operator between single-precision GLM vector and high-precision vector.
+     * @param a Single-precision GLM vector.
+     * @param b High-precision vector.
+     * @return High-precision sum vector.
+     */
+    Vec3 operator+(const glm::vec3& a, const Vec3& b);
+
+    /**
+     * @brief Subtraction operator between high-precision vector and single-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Single-precision GLM vector.
+     * @return High-precision difference vector.
+     */
+    Vec3 operator-(const Vec3& a, const glm::vec3& b);
+
+    /**
+     * @brief Subtraction operator between single-precision GLM vector and high-precision vector.
+     * @param a Single-precision GLM vector.
+     * @param b High-precision vector.
+     * @return High-precision difference vector.
+     */
+    Vec3 operator-(const glm::vec3& a, const Vec3& b);
+
+    /**
+     * @brief Component-wise multiplication operator between high-precision vector and single-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Single-precision GLM vector.
+     * @return Component-wise product vector.
+     */
+    Vec3 operator*(const Vec3& a, const glm::vec3& b);
+
+    /**
+     * @brief Component-wise multiplication operator between single-precision GLM vector and high-precision vector.
+     * @param a Single-precision GLM vector.
+     * @param b High-precision vector.
+     * @return Component-wise product vector.
+     */
+    Vec3 operator*(const glm::vec3& a, const Vec3& b);
+
+    /**
+     * @brief Component-wise division operator between high-precision vector and single-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Single-precision GLM vector.
+     * @return Component-wise quotient vector.
+     */
+    Vec3 operator/(const Vec3& a, const glm::vec3& b);
+
+    /**
+     * @brief Component-wise division operator between single-precision GLM vector and high-precision vector.
+     * @param a Single-precision GLM vector.
+     * @param b High-precision vector.
+     * @return Component-wise quotient vector.
+     */
+    Vec3 operator/(const glm::vec3& a, const Vec3& b);
+
+    /**
+     * @brief Addition operator between high-precision vector and double-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Double-precision GLM vector.
+     * @return High-precision sum vector.
+     */
+    Vec3 operator+(const Vec3& a, const glm::dvec3& b);
+
+    /**
+     * @brief Addition operator between double-precision GLM vector and high-precision vector.
+     * @param a Double-precision GLM vector.
+     * @param b High-precision vector.
+     * @return High-precision sum vector.
+     */
+    Vec3 operator+(const glm::dvec3& a, const Vec3& b);
+
+    /**
+     * @brief Subtraction operator between high-precision vector and double-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Double-precision GLM vector.
+     * @return High-precision difference vector.
+     */
+    Vec3 operator-(const Vec3& a, const glm::dvec3& b);
+
+    /**
+     * @brief Subtraction operator between double-precision GLM vector and high-precision vector.
+     * @param a Double-precision GLM vector.
+     * @param b High-precision vector.
+     * @return High-precision difference vector.
+     */
+    Vec3 operator-(const glm::dvec3& a, const Vec3& b);
+
+    /**
+     * @brief Component-wise multiplication operator between high-precision vector and double-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Double-precision GLM vector.
+     * @return Component-wise product vector.
+     */
+    Vec3 operator*(const Vec3& a, const glm::dvec3& b);
+
+    /**
+     * @brief Component-wise multiplication operator between double-precision GLM vector and high-precision vector.
+     * @param a Double-precision GLM vector.
+     * @param b High-precision vector.
+     * @return Component-wise product vector.
+     */
+    Vec3 operator*(const glm::dvec3& a, const Vec3& b);
+
+    /**
+     * @brief Component-wise division operator between high-precision vector and double-precision GLM vector.
+     * @param a High-precision vector.
+     * @param b Double-precision GLM vector.
+     * @return Component-wise quotient vector.
+     */
+    Vec3 operator/(const Vec3& a, const glm::dvec3& b);
+
+    /**
+     * @brief Component-wise division operator between double-precision GLM vector and high-precision vector.
+     * @param a Double-precision GLM vector.
+     * @param b High-precision vector.
+     * @return Component-wise quotient vector.
+     */
+    Vec3 operator/(const glm::dvec3& a, const Vec3& b);
 
     /**
      * @brief 4-component high-precision vector.
@@ -504,4 +668,258 @@ namespace glm
      * @return Orientation quaternion.
      */
     RT_PhysicsCore::Quat angleAxis(RT_PhysicsCore::Real angle, const RT_PhysicsCore::Vec3& axis);
+
+    /**
+     * @brief Euclidean norm of a high-precision orientation quaternion.
+     * @param q Orientation quaternion.
+     * @return Scalar Euclidean length.
+     */
+    RT_PhysicsCore::Real length(const RT_PhysicsCore::Quat& q);
+
+    /**
+     * @brief Squared Euclidean norm of a high-precision orientation quaternion.
+     * @param q Orientation quaternion.
+     * @return Scalar squared length.
+     */
+    RT_PhysicsCore::Real length2(const RT_PhysicsCore::Quat& q);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for single-precision 3D vector.
+     * @param v Single-precision vector.
+     * @param scalar High-precision scalar.
+     * @return Scaled single-precision vector.
+     */
+    vec3 operator*(const vec3& v, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for single-precision 3D vector.
+     * @param scalar High-precision scalar.
+     * @param v Single-precision vector.
+     * @return Scaled single-precision vector.
+     */
+    vec3 operator*(RT_PhysicsCore::Real scalar, const vec3& v);
+
+    /**
+     * @brief Mixed-precision scalar division operator for single-precision 3D vector.
+     * @param v Single-precision vector.
+     * @param scalar High-precision scalar divisor.
+     * @return Scaled single-precision vector.
+     */
+    vec3 operator/(const vec3& v, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for double-precision 3D vector.
+     * @param v Double-precision vector.
+     * @param scalar Single-precision scalar.
+     * @return Scaled double-precision vector.
+     */
+    dvec3 operator*(const dvec3& v, float scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for double-precision 3D vector.
+     * @param scalar Single-precision scalar.
+     * @param v Double-precision vector.
+     * @return Scaled double-precision vector.
+     */
+    dvec3 operator*(float scalar, const dvec3& v);
+
+    /**
+     * @brief Mixed-precision scalar division operator for double-precision 3D vector.
+     * @param v Double-precision vector.
+     * @param scalar Single-precision scalar divisor.
+     * @return Scaled double-precision vector.
+     */
+    dvec3 operator/(const dvec3& v, float scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for single-precision 2D vector.
+     * @param v Single-precision vector.
+     * @param scalar High-precision scalar.
+     * @return Scaled single-precision vector.
+     */
+    vec2 operator*(const vec2& v, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for single-precision 2D vector.
+     * @param scalar High-precision scalar.
+     * @param v Single-precision vector.
+     * @return Scaled single-precision vector.
+     */
+    vec2 operator*(RT_PhysicsCore::Real scalar, const vec2& v);
+
+    /**
+     * @brief Mixed-precision scalar division operator for single-precision 2D vector.
+     * @param v Single-precision vector.
+     * @param scalar High-precision scalar divisor.
+     * @return Scaled single-precision vector.
+     */
+    vec2 operator/(const vec2& v, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for double-precision 2D vector.
+     * @param v Double-precision vector.
+     * @param scalar Single-precision scalar.
+     * @return Scaled double-precision vector.
+     */
+    dvec2 operator*(const dvec2& v, float scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for double-precision 2D vector.
+     * @param scalar Single-precision scalar.
+     * @param v Double-precision vector.
+     * @return Scaled double-precision vector.
+     */
+    dvec2 operator*(float scalar, const dvec2& v);
+
+    /**
+     * @brief Mixed-precision scalar division operator for double-precision 2D vector.
+     * @param v Double-precision vector.
+     * @param scalar Single-precision scalar divisor.
+     * @return Scaled double-precision vector.
+     */
+    dvec2 operator/(const dvec2& v, float scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for single-precision 4D vector.
+     * @param v Single-precision vector.
+     * @param scalar High-precision scalar.
+     * @return Scaled single-precision vector.
+     */
+    vec4 operator*(const vec4& v, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for single-precision 4D vector.
+     * @param scalar High-precision scalar.
+     * @param v Single-precision vector.
+     * @return Scaled single-precision vector.
+     */
+    vec4 operator*(RT_PhysicsCore::Real scalar, const vec4& v);
+
+    /**
+     * @brief Mixed-precision scalar division operator for single-precision 4D vector.
+     * @param v Single-precision vector.
+     * @param scalar High-precision scalar divisor.
+     * @return Scaled single-precision vector.
+     */
+    vec4 operator/(const vec4& v, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for double-precision 4D vector.
+     * @param v Double-precision vector.
+     * @param scalar Single-precision scalar.
+     * @return Scaled double-precision vector.
+     */
+    dvec4 operator*(const dvec4& v, float scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for double-precision 4D vector.
+     * @param scalar Single-precision scalar.
+     * @param v Double-precision vector.
+     * @return Scaled double-precision vector.
+     */
+    dvec4 operator*(float scalar, const dvec4& v);
+
+    /**
+     * @brief Mixed-precision scalar division operator for double-precision 4D vector.
+     * @param v Double-precision vector.
+     * @param scalar Single-precision scalar divisor.
+     * @return Scaled double-precision vector.
+     */
+    dvec4 operator/(const dvec4& v, float scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for single-precision 3x3 matrix.
+     * @param m Single-precision 3x3 matrix.
+     * @param scalar High-precision scalar.
+     * @return Scaled single-precision 3x3 matrix.
+     */
+    mat3 operator*(const mat3& m, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for single-precision 3x3 matrix.
+     * @param scalar High-precision scalar.
+     * @param m Single-precision 3x3 matrix.
+     * @return Scaled single-precision 3x3 matrix.
+     */
+    mat3 operator*(RT_PhysicsCore::Real scalar, const mat3& m);
+
+    /**
+     * @brief Mixed-precision scalar division operator for single-precision 3x3 matrix.
+     * @param m Single-precision 3x3 matrix.
+     * @param scalar High-precision scalar divisor.
+     * @return Scaled single-precision 3x3 matrix.
+     */
+    mat3 operator/(const mat3& m, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for double-precision 3x3 matrix.
+     * @param m Double-precision 3x3 matrix.
+     * @param scalar Single-precision scalar.
+     * @return Scaled double-precision 3x3 matrix.
+     */
+    dmat3 operator*(const dmat3& m, float scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for double-precision 3x3 matrix.
+     * @param scalar Single-precision scalar.
+     * @param m Double-precision 3x3 matrix.
+     * @return Scaled double-precision 3x3 matrix.
+     */
+    dmat3 operator*(float scalar, const dmat3& m);
+
+    /**
+     * @brief Mixed-precision scalar division operator for double-precision 3x3 matrix.
+     * @param m Double-precision 3x3 matrix.
+     * @param scalar Single-precision scalar divisor.
+     * @return Scaled double-precision 3x3 matrix.
+     */
+    dmat3 operator/(const dmat3& m, float scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for single-precision 4x4 matrix.
+     * @param m Single-precision 4x4 matrix.
+     * @param scalar High-precision scalar.
+     * @return Scaled single-precision 4x4 matrix.
+     */
+    mat4 operator*(const mat4& m, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for single-precision 4x4 matrix.
+     * @param scalar High-precision scalar.
+     * @param m Single-precision 4x4 matrix.
+     * @return Scaled single-precision 4x4 matrix.
+     */
+    mat4 operator*(RT_PhysicsCore::Real scalar, const mat4& m);
+
+    /**
+     * @brief Mixed-precision scalar division operator for single-precision 4x4 matrix.
+     * @param m Single-precision 4x4 matrix.
+     * @param scalar High-precision scalar divisor.
+     * @return Scaled single-precision 4x4 matrix.
+     */
+    mat4 operator/(const mat4& m, RT_PhysicsCore::Real scalar);
+
+    /**
+     * @brief Mixed-precision scalar multiplication operator for double-precision 4x4 matrix.
+     * @param m Double-precision 4x4 matrix.
+     * @param scalar Single-precision scalar.
+     * @return Scaled double-precision 4x4 matrix.
+     */
+    dmat4 operator*(const dmat4& m, float scalar);
+
+    /**
+     * @brief Left mixed-precision scalar multiplication operator for double-precision 4x4 matrix.
+     * @param scalar Single-precision scalar.
+     * @param m Double-precision 4x4 matrix.
+     * @return Scaled double-precision 4x4 matrix.
+     */
+    dmat4 operator*(float scalar, const dmat4& m);
+
+    /**
+     * @brief Mixed-precision scalar division operator for double-precision 4x4 matrix.
+     * @param m Double-precision 4x4 matrix.
+     * @param scalar Single-precision scalar divisor.
+     * @return Scaled double-precision 4x4 matrix.
+     */
+    dmat4 operator/(const dmat4& m, float scalar);
 }

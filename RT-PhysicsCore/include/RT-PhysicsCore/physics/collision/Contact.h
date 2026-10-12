@@ -29,7 +29,63 @@ namespace RT_PhysicsCore
         Real tangentImpulse1{ 0.0 };            ///< Accumulated tangent impulse along tangent direction 1.
         Real tangentImpulse2{ 0.0 };            ///< Accumulated tangent impulse along tangent direction 2.
         bool isStuck{ false };                  ///< Flag indicating whether the contact is in static friction regime.
+
+        /**
+         * @brief Implicit conversion operator to high-precision position vector.
+         * @return Reference to world-space contact position.
+         */
+        operator const Vec3& () const;
+
+        /**
+         * @brief Implicit conversion operator to high-precision position vector.
+         * @return Reference to world-space contact position.
+         */
+        operator Vec3& ();
+
+        /**
+         * @brief Implicit conversion operator to single-precision position vector for rendering.
+         * @return World-space contact position in single precision.
+         */
+        operator glm::vec3() const;
+
+        /**
+         * @brief Implicit conversion operator to double-precision position vector.
+         * @return World-space contact position in double precision.
+         */
+        operator glm::dvec3() const;
     };
+
+    /**
+     * @brief Exact addition operator between a ContactPoint and a high-precision offset vector.
+     * @param cp Contact point source.
+     * @param v High-precision vector offset.
+     * @return Displaced world position.
+     */
+    Vec3 operator+(const ContactPoint& cp, const Vec3& v);
+
+    /**
+     * @brief Exact addition operator between a high-precision offset vector and a ContactPoint.
+     * @param v High-precision vector offset.
+     * @param cp Contact point source.
+     * @return Displaced world position.
+     */
+    Vec3 operator+(const Vec3& v, const ContactPoint& cp);
+
+    /**
+     * @brief Exact subtraction operator between a ContactPoint and a high-precision offset vector.
+     * @param cp Contact point source.
+     * @param v High-precision vector offset.
+     * @return Displaced world position.
+     */
+    Vec3 operator-(const ContactPoint& cp, const Vec3& v);
+
+    /**
+     * @brief Exact subtraction operator between a high-precision offset vector and a ContactPoint.
+     * @param v High-precision vector offset.
+     * @param cp Contact point source.
+     * @return Displaced world position.
+     */
+    Vec3 operator-(const Vec3& v, const ContactPoint& cp);
 
     /**
      * @struct Contact
