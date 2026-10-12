@@ -2,8 +2,9 @@
  * @file NarrowPhase.h
  * @brief Exact pairwise collision detection tests between geometric primitives.
  *
- * Dispatches shape-pair queries (Sphere, Box, Capsule) using exact Separating
- * Axis Theorem (SAT), Sutherland-Hodgman polygon clipping, and alternating projections.
+ * Dispatches shape-pair queries (Sphere, Box, Capsule) using exact Separating Axis Theorem (SAT),
+ * Sutherland-Hodgman polygon clipping, GJK convex distance queries, and extremal manifold reduction
+ * down to at most 4 stable support points.
  */
 
 #pragma once

@@ -1,11 +1,8 @@
 # RT-PhysicsCore
 
-A real-time 3D rigid body physics engine built from scratch in **C++17** with a custom Entity-Component-System architecture, advanced constraint solvers, telemetry profiling tools, and an integrated OpenGL 3.3 debug renderer.
+A real-time 3D rigid body physics engine built from scratch in **C++17** with a custom Entity-Component-System architecture, high-precision double-precision dynamics, island-based constraint solvers, continuous collision detection, telemetry profiling tools, and an integrated OpenGL 3.3 debug renderer.
 
 > **Status:** Active Development · [Physics Design Doc](RT-PhysicsCore/docs/physics_design.md) · [Engine Architecture Doc](RT-PhysicsCore/docs/engine_core.md)
-
-<!-- TODO: Add a GIF/screenshot of the demo here -->
-<!-- ![RT-PhysicsCore Demo](docs/images/demo.gif) -->
 
 ---
 
@@ -13,33 +10,37 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
 
 ### Physics Simulation
 
+- **High-Precision Dynamics Layer** — Core integration and constraint calculations execute in double precision (`Real`, `Vec3`, `Quat`, `Mat3`), preventing rounding accumulation during tight constraint solves while seamlessly interoperating with single-precision GLM.
+- **Master Substepping Pipeline** — Divides every engine tick into sub-steps (default: 4 substeps) for stiff stacking, high-speed stability, and robust constraint satisfaction.
 - **6-DOF Rigid Body Dynamics** — Full linear and angular state with analytical inertia tensors for boxes, spheres, cylinders, and capsules (including parallel-axis theorem decomposition for capsule end-caps).
-- **DLM Symplectic Rotational Integration** — Decomposes rigid-body angular motion using the Dullweber–Leimkuhler–McLachlan (DLM 1997) symplectic splitting scheme ($R_1(h/2) \circ R_2(h/2) \circ R_3(h) \circ R_2(h/2) \circ R_1(h/2)$). Strictly bounds kinetic energy drift to $<0.01\%$, exactly conserves angular momentum $\|\mathbf{L}\|$, and naturally captures the tennis-racket / Dzhanibekov effect without numerical damping.
-- **Semi-Implicit Linear Euler** — Velocity-first integration maintains symplectic energy conservation for linear motion and resting contacts over long simulation runs.
+- **DLM Symplectic Rotational Integration** — Dullweber–Leimkuhler–McLachlan (DLM 1997) 5-step Strang splitting ($R_1(h/2) \circ R_2(h/2) \circ R_3(h) \circ R_2(h/2) \circ R_1(h/2)$). Strictly bounds kinetic energy drift to $<0.01\%$, exactly conserves angular momentum $\|\mathbf{L}\|$, and naturally captures intermediate-axis tumbling (the Dzhanibekov / tennis-racket effect).
+- **Semi-Implicit Linear Euler** — Symplectic velocity-first integration preserves phase space energy for linear motion and resting contacts over long simulation runs.
 - **Accumulator-Based Fixed Timestep** — Decouples 60 Hz physics from variable render rates with spiral-of-death clamping and sub-frame interpolation factor output.
 
-### Collision Detection
+### Collision Detection & CCD
 
-- **Broad Phase** — AABB overlap testing with oriented-box reprojection and capsule bounding via hemisphere union.
-- **Narrow Phase** — Six primitive pair handlers:
+- **Broad Phase** — Swept AABB overlap testing with oriented-box reprojection and velocity expansion to capture fast-moving candidates before narrow phase.
+- **Narrow Phase** — Exact geometric primitive pair testing:
   | Pair | Method |
   |---|---|
-  | Sphere–Sphere | Distance check |
+  | Sphere–Sphere | Center distance test |
   | Sphere–Box | Closest-point clamping |
   | Sphere–Capsule | Point–segment distance |
   | Capsule–Capsule | Ericson segment–segment closest points |
-  | Box–Capsule | Alternating projection (segment to box surface) with contact-plane overlap interval detection |
+  | Box–Capsule | Alternating projection with contact-plane interval detection |
   | Box–Box | 15-axis SAT with Sutherland–Hodgman face clipping |
+- **Extremal 4-Point Manifold Reduction** — Clips contact faces to at most 4 extremal support points maximizing support area, maintaining physical stability while keeping LCP matrices compact.
+- **Continuous Collision Detection (CCD)** — Bilateral conservative advancement via GJK distance queries calculates exact time-of-impact (TOI) and clamps motion fractions to prevent tunneling through thin geometry.
+- **Persistent Contact Caching & Warm-Starting** — Caches manifolds across sub-steps with canonical pair hashing and local anchor matching, re-applying historical normal and friction impulses for instant stack stability.
 
-- **Multi-Point Contact Manifolds** — Box–Box generates up to 8 contact points via polygon clipping for stable flat stacking. Parallel capsule and capsule-on-face contacts emit 2-point manifolds to prevent unrealistic rolling.
+### Constraint Resolution & Solvers
 
-### Constraint Resolution
-
-- **Sequential Impulses (Projected Gauss-Seidel)** — Accumulated-impulse clamping allows correction of earlier overshoots across solver iterations.
-- **Exact Lemke LCP Solver** — Formulates all contact constraints as a Linear Complementarity Problem ($w = Mz + q$) and solves simultaneously via Lemke's pivoting algorithm with Bland's rule cycle prevention in double precision. Eliminates contact ordering bias.
-- **True 2D Coulomb Friction** — Coupled tangential impulse solving via Cramer's rule with circular cone clamping ($\|\lambda_t\| \leq \mu \cdot \lambda_n$), replacing the standard decoupled square-pyramid approximation.
-- **Split-Impulse Position Correction** — Resolves penetration by directly adjusting positions and orientations without injecting artificial kinetic energy (no Baumgarte stabilization).
-- **Adaptive Iteration Budgets** — Optional time-budgeted solver mode dynamically scales iteration counts within configurable millisecond caps.
+- **Simulation Island Partitioning** — Disjoint-set Union-Find algorithm groups interacting dynamic bodies into independent islands bounded by static bodies, isolating solver systems.
+- **Decoupled Solver Backends** — Switchable constraint solvers implementing the `ISolverBackend` interface:
+  - **Sequential Impulses (Projected Gauss-Seidel)**: Accumulated-impulse clamping allowing earlier overshoots to be undone across iterations.
+  - **Exact Lemke LCP Solver**: Direct Delassus mobility matrix formulation solved simultaneously via Lemke's pivoting algorithm with Bland's rule cycle prevention in double precision. Eliminates contact ordering bias.
+- **True 2D Coulomb Friction** — Coupled tangential impulse solving via Cramer's rule with circular cone clamping ($\|\boldsymbol{\lambda}_t\| \leq \mu \lambda_n$), replacing the standard decoupled square-pyramid approximation.
+- **Split-Impulse Position Correction** — Resolves penetration by integrating pseudo-velocities directly into position and orientation without injecting artificial kinetic energy.
 
 ### Engine Architecture
 
@@ -131,24 +132,18 @@ cmake --build build --config Release
 ┌───────────────────────────────────────────────────────────┐
 │                       Engine Loop                         │
 │  Accumulator ──► FixedUpdate (0-N) ──► Update ──► Render  │
-└──────────┬────────────────┬─────────────────┬─────────────┘
-           │                │                 │
-     ┌─────▼──────┐    ┌────▼────┐     ┌──────▼──────┐
-     │  Physics   │    │Transform│     │   Render    │
-     │  Pipeline  │    │  Prop.  │     │   System    │
-     └─────┬──────┘    └─────────┘     └─────────────┘
-           │
-    ┌──────▼───────┐
-    │ PhysicsSystem│  Symplectic Euler linear + DLM rotational splitting
-    └──────┬───────┘
-    ┌──────▼───────┐
-    │  Collision   │  Broad phase (AABB) → Narrow phase (SAT / Primitives)
-    │   System     │
-    └──────┬───────┘
-    ┌──────▼───────┐
-    │  Resolution  │  Sequential Impulses  or  Lemke LCP
-    │   System     │  + Coulomb friction + position correction
-    └──────────────┘
+└─────────────────────────────┬─────────────────────────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │PhysicsPipelineSystem│ Master Substepping (N substeps)
+                    └─────────┬──────────┘
+                              │
+       ┌──────────────────────┼──────────────────────┐
+       │                      │                      │
+┌──────▼───────┐       ┌──────▼───────┐       ┌──────▼───────┐
+│Broad & Narrow│       │ CCD & Cache  │       │Island Solver │
+│   Phase      │       │ Warm-Starting│       │(PGS / Lemke) │
+└──────────────┘       └──────────────┘       └──────────────┘
 ```
 
 ### Project Structure
@@ -156,12 +151,13 @@ cmake --build build --config Release
 ```
 RT-PhysicsCore/
 ├── include/RT-PhysicsCore/
-│   ├── core/              # Engine loop, ECS framework
+│   ├── core/              # Engine loop, ECS framework, MathTypes (Real, Vec3, Mat3, Quat)
 │   │   └── ecs/           # Entity, Scene, ComponentStorage, Systems
 │   ├── physics/           # Dynamics, materials, collision, solvers
-│   │   ├── collision/     # AABB, NarrowPhase, Contact
+│   │   ├── collision/     # AABB, NarrowPhase, Contact, ContactCache, GJK, ShapeCast
 │   │   ├── components/    # RigidBody, Collider, PhysicsMaterial
-│   │   └── systems/       # PhysicsSystem, CollisionSystem, ResolutionSystem
+│   │   ├── solver/        # ISolverBackend, IterativeSolver, ExactSolver, IslandBuilder
+│   │   └── systems/       # PhysicsPipelineSystem, PhysicsSystem, CollisionSystem, ResolutionSystem
 │   ├── rendering/         # Renderer (Pimpl), Camera, Input, RenderSystem
 │   ├── telemetry/         # Profiler, MemoryTracker, TelemetryOverlay, Sessions
 │   └── utils/             # Logging, DebugDraw, ConsoleInput
@@ -180,10 +176,11 @@ RT-PhysicsCore/
 
 Detailed technical documentation lives in [`RT-PhysicsCore/docs/`](RT-PhysicsCore/docs/):
 
-- [**Physics Design**](RT-PhysicsCore/docs/physics_design.md) — Dynamics integration, DLM splitting, inertia tensors, collision algorithms, LCP formulation, Coulomb cone friction, and solver theory.
+- [**Physics Design**](RT-PhysicsCore/docs/physics_design.md) — Dynamics integration, DLM splitting, inertia tensors, collision algorithms, CCD, warm-starting, island graph partitioning, LCP formulation, Coulomb cone friction, and solver theory.
+- [**Architecture Specification**](RT-PhysicsCore/docs/architecture.md) — Multi-layer engine architecture, lifecycle flow, ECS mechanics, and system coordination.
 - [**Engine Core**](RT-PhysicsCore/docs/engine_core.md) — ECS architecture, transform hierarchy math, fixed timestep loop, rendering pipeline, input system, and debug draw specifications.
 - [**Telemetry & Profiling**](RT-PhysicsCore/docs/telemetry_system.md) — Scoped profiling macros, lock-free memory tracking, Chrome Tracing serialization, dual-window OpenGL context sharing, and offline viewer replay.
-- 
+
 ---
 
 ## License

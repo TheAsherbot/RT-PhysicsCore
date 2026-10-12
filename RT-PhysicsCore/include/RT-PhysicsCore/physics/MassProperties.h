@@ -4,6 +4,7 @@
  *
  * Computes body-space principal-axis inertia tensors for standard geometric primitives
  * (boxes, spheres, cylinders, capsules) and constructs initialized RigidBodyComponent instances.
+ * Operates seamlessly with both single-precision GLM vectors and high-precision Vec3/Real types.
  */
 
 #pragma once
