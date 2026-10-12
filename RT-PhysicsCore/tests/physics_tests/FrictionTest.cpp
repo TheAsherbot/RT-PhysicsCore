@@ -17,9 +17,7 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/components/PhysicsMaterialComponent.h"
@@ -32,6 +30,12 @@ namespace
 {
     using namespace RT_PhysicsCore;
 
+    /**
+     * @brief Steps the simulation forward by a given tick count.
+     * @param scene The active ECS scene.
+     * @param ticks The number of fixed update ticks to execute.
+     * @param dt The fixed delta time per tick.
+     */
     void StepScene(Scene& scene, int ticks, double dt = 1.0 / 60.0)
     {
         for (int i = 0; i < ticks; ++i)
@@ -56,11 +60,7 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        scene.AddSystem(std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4));
 
         Entity ground = scene.CreateEntity();
         TransformComponent gtc;
@@ -121,11 +121,7 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        scene.AddSystem(std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4));
 
         Entity ground = scene.CreateEntity();
         TransformComponent gtc;
@@ -192,11 +188,7 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        scene.AddSystem(std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4));
 
         float angleRad = glm::radians(15.0f);
 
@@ -242,11 +234,7 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        scene.AddSystem(std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4));
 
         float angleRad = glm::radians(45.0f);
 
@@ -299,11 +287,7 @@ int main()
 
     Scene scene;
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-    scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-    auto colSys = std::make_unique<CollisionSystem>(scene);
-    CollisionSystem* colSysPtr = colSys.get();
-    scene.AddSystem(std::move(colSys));
-    scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+    scene.AddSystem(std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4));
 
     int currentScenario = 1;
     constexpr int kTotalScenarios = 3;
@@ -334,7 +318,12 @@ int main()
                 gcc.size = { 25.0f, 0.5f, 10.0f };
                 scene.AddComponent(ground, gcc);
 
-                struct Racer { MaterialId mat; float z; };
+                struct Racer
+                {
+                    MaterialId mat;
+                    float z;
+                };
+
                 std::vector<Racer> racers = {
                     { MaterialId::BouncyIce, -3.0f },
                     { MaterialId::Wood, 0.0f },

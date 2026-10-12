@@ -17,9 +17,7 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
@@ -30,6 +28,12 @@ namespace
 {
     using namespace RT_PhysicsCore;
 
+    /**
+     * @brief Steps the simulation forward by a given tick count.
+     * @param scene The active ECS scene.
+     * @param ticks The number of fixed update ticks to execute.
+     * @param dt The fixed delta time per tick.
+     */
     void StepScene(Scene& scene, int ticks, double dt = 1.0 / 60.0)
     {
         for (int i = 0; i < ticks; ++i)
@@ -53,14 +57,9 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        auto phys = std::make_unique<PhysicsSystem>(scene);
-        phys->SetGravity({ 0.0f, 0.0f, 0.0f });
-        scene.AddSystem(std::move(phys));
-
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        pipeline->GetPhysicsSystem().SetGravity({ 0.0f, 0.0f, 0.0f });
+        scene.AddSystem(std::move(pipeline));
 
         float radius = 1.0f;
         Entity a = scene.CreateEntity();
@@ -109,14 +108,9 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        auto phys = std::make_unique<PhysicsSystem>(scene);
-        phys->SetGravity({ 0.0f, 0.0f, 0.0f });
-        scene.AddSystem(std::move(phys));
-
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        pipeline->GetPhysicsSystem().SetGravity({ 0.0f, 0.0f, 0.0f });
+        scene.AddSystem(std::move(pipeline));
 
         Entity a = scene.CreateEntity();
         TransformComponent tca;
@@ -164,14 +158,9 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        auto phys = std::make_unique<PhysicsSystem>(scene);
-        phys->SetGravity({ 0.0f, 0.0f, 0.0f });
-        scene.AddSystem(std::move(phys));
-
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        pipeline->GetPhysicsSystem().SetGravity({ 0.0f, 0.0f, 0.0f });
+        scene.AddSystem(std::move(pipeline));
 
         Entity ground = scene.CreateEntity();
         TransformComponent gtc;
@@ -216,14 +205,9 @@ int main()
         ++totalCount;
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        auto phys = std::make_unique<PhysicsSystem>(scene);
-        phys->SetGravity({ 0.0f, -9.80665f, 0.0f });
-        scene.AddSystem(std::move(phys));
-
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-        scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        pipeline->GetPhysicsSystem().SetGravity({ 0.0f, -9.80665f, 0.0f });
+        scene.AddSystem(std::move(pipeline));
 
         Entity ground = scene.CreateEntity();
         TransformComponent gtc;
@@ -298,13 +282,9 @@ int main()
 
     Scene scene;
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-    auto phys = std::make_unique<PhysicsSystem>(scene);
-    phys->SetGravity({ 0.0f, 0.0f, 0.0f });
-    scene.AddSystem(std::move(phys));
-    auto colSys = std::make_unique<CollisionSystem>(scene);
-    CollisionSystem* colSysPtr = colSys.get();
-    scene.AddSystem(std::move(colSys));
-    scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr));
+    auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+    pipeline->GetPhysicsSystem().SetGravity({ 0.0f, 0.0f, 0.0f });
+    scene.AddSystem(std::move(pipeline));
 
     int currentScenario = 1;
     constexpr int kTotalScenarios = 4;

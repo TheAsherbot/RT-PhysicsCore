@@ -18,7 +18,7 @@
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
@@ -32,19 +32,28 @@ namespace
     constexpr double kFixedDt = 1.0 / 60.0;
     constexpr float kGravity = 9.80665f;
 
+    /**
+     * @struct IntegrationScene
+     * @brief Bundles an ECS Scene with its active physics pipeline and subsystem pointers.
+     */
     struct IntegrationScene
     {
         Scene scene;
+        PhysicsPipelineSystem* pipeline = nullptr;
         PhysicsSystem* physics = nullptr;
     };
 
-    std::unique_ptr<IntegrationScene> CreateIntegrationScene()
+    std::unique_ptr<IntegrationScene> CreateIntegrationScene(int substeps = 1)
     {
         auto is = std::make_unique<IntegrationScene>();
         is->scene.AddSystem(std::make_unique<TransformPropagationSystem>(is->scene));
-        auto phys = std::make_unique<PhysicsSystem>(is->scene);
-        is->physics = phys.get();
-        is->scene.AddSystem(std::move(phys));
+
+        auto pipe = std::make_unique<PhysicsPipelineSystem>(
+            is->scene, ResolutionSystem::SolverMode::SequentialImpulses, substeps);
+        is->pipeline = pipe.get();
+        is->physics = &pipe->GetPhysicsSystem();
+        is->scene.AddSystem(std::move(pipe));
+
         return is;
     }
 
@@ -59,6 +68,10 @@ namespace
 
     // --- Test infrastructure ---
 
+    /**
+     * @struct TestResult
+     * @brief Records the result of an automated assertion check.
+     */
     struct TestResult
     {
         std::string name;
@@ -75,6 +88,10 @@ namespace
 
     // --- Visual data ---
 
+    /**
+     * @struct TrailPoint
+     * @brief Trajectory sample point holding coordinates and color.
+     */
     struct TrailPoint
     {
         glm::vec3 position;
@@ -207,7 +224,6 @@ namespace
         is->scene.AddComponent(e, rb);
 
         float initialMag = glm::length(rb.angularMomentum);
-        auto* initialBody = is->scene.GetComponent<RigidBodyComponent>(e);
         // Compute the analytical initial kinetic energy from body inertia:
         glm::vec3 initL = rb.angularMomentum;
         float initialE = 0.5f * (
@@ -356,6 +372,10 @@ namespace
 
     // --- Visual: trajectory drawing ---
 
+    /**
+     * @struct VisualTrajectory
+     * @brief Trajectory curve data for simulated vs analytical comparisons.
+     */
     struct VisualTrajectory
     {
         std::string name;
@@ -467,6 +487,10 @@ int main()
 
     auto trajectoryVisuals = BuildVisualTrajectories();
 
+    /**
+     * @struct LiveAngularCase
+     * @brief Test setup for runtime rotational dynamics visualization.
+     */
     struct LiveAngularCase
     {
         std::string name;
@@ -477,15 +501,15 @@ int main()
     };
 
     std::vector<LiveAngularCase> angularCases = {
-        {"Spinning sphere (L conserved, omega constant)",
+        { "Spinning sphere (L conserved, omega constant)",
             { 0.5f, 0.5f, 0.5f }, true,
-            { 0.0f, 2.0f, 0.0f }, { 0.3f, 0.8f, 0.4f }},
-        {"Dzhanibekov tumble (L conserved, omega wobbles)",
+            { 0.0f, 2.0f, 0.0f }, { 0.3f, 0.8f, 0.4f } },
+        { "Dzhanibekov tumble (L conserved, omega wobbles)",
             { 1.5f, 0.1f, 0.5f }, false,
-            { 0.01f, 0.01f, 3.0f }, { 1.0f, 0.5f, 0.2f }},
-        {"Fast spin - quaternion stability",
+            { 0.01f, 0.01f, 3.0f }, { 1.0f, 0.5f, 0.2f } },
+        { "Fast spin - quaternion stability",
             { 1.0f, 0.5f, 0.3f }, false,
-            { 5.0f, 3.0f, 7.0f }, { 0.6f, 0.3f, 0.9f }},
+            { 5.0f, 3.0f, 7.0f }, { 0.6f, 0.3f, 0.9f } },
     };
 
     size_t totalVisuals = trajectoryVisuals.size() + angularCases.size();
@@ -628,8 +652,8 @@ int main()
                     }
                 }
                 static const int edges[12][2] = {
-                    {0,1},{0,2},{0,4},{3,1},{3,2},{3,7},
-                    {5,1},{5,4},{5,7},{6,2},{6,4},{6,7}
+                    { 0, 1 }, { 0, 2 }, { 0, 4 }, { 3, 1 }, { 3, 2 }, { 3, 7 },
+                    { 5, 1 }, { 5, 4 }, { 5, 7 }, { 6, 2 }, { 6, 4 }, { 6, 7 }
                 };
                 for (auto& edge : edges)
                 {

@@ -1,9 +1,6 @@
 /**
  * @file SolverStabilityTest.cpp
  * @brief Validates the stability of the contact solver under heavy resting loads.
- *
- * Simulates stacks of rigid bodies, monitoring total kinetic energy and maximum
- * penetration depth to ensure the system reaches a stable resting state.
  */
 
 #include <chrono>
@@ -21,9 +18,7 @@
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/collision/Contact.h"
@@ -35,9 +30,14 @@ namespace
 {
     using namespace RT_PhysicsCore;
 
+    /**
+     * @struct PhysicsScene
+     * @brief Bundles a Scene with its physics pipeline and subsystem pointers.
+     */
     struct PhysicsScene
     {
         Scene scene;
+        PhysicsPipelineSystem* pipeline = nullptr;
         PhysicsSystem* physics = nullptr;
         CollisionSystem* collision = nullptr;
         ResolutionSystem* resolution = nullptr;
@@ -48,17 +48,13 @@ namespace
         auto ps = std::make_unique<PhysicsScene>();
         ps->scene.AddSystem(std::make_unique<TransformPropagationSystem>(ps->scene));
 
-        auto phys = std::make_unique<PhysicsSystem>(ps->scene);
-        ps->physics = phys.get();
-        ps->scene.AddSystem(std::move(phys));
-
-        auto col = std::make_unique<CollisionSystem>(ps->scene);
-        ps->collision = col.get();
-        ps->scene.AddSystem(std::move(col));
-
-        auto res = std::make_unique<ResolutionSystem>(ps->scene, *ps->collision, ResolutionSystem::SolverMode::SequentialImpulses);
-        ps->resolution = res.get();
-        ps->scene.AddSystem(std::move(res));
+        auto pipe = std::make_unique<PhysicsPipelineSystem>(
+            ps->scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        ps->pipeline = pipe.get();
+        ps->physics = &pipe->GetPhysicsSystem();
+        ps->collision = &pipe->GetCollisionSystem();
+        ps->resolution = &pipe->GetResolutionSystem();
+        ps->scene.AddSystem(std::move(pipe));
 
         return ps;
     }
@@ -119,6 +115,7 @@ namespace
         return ke;
     }
 
+    
     float GetMaxPenetration(CollisionSystem* colSys)
     {
         float maxPen = 0.0f;
@@ -126,25 +123,43 @@ namespace
         {
             for (int i = 0; i < c.pointCount; ++i)
             {
-                maxPen = std::max(maxPen, c.penetrations[i]);
+                if (c.points[i].signedDistance < 0.0)
+                {
+                    float penetration = static_cast<float>(-c.points[i].signedDistance);
+                    maxPen = std::max(maxPen, penetration);
+                }
             }
         }
         return maxPen;
     }
 
-    void DrawOrientedBox(const glm::vec3& center, const glm::vec3& halfExtents, const glm::mat3& rot, const glm::vec3& color)
+    void DrawOrientedBox(const glm::vec3& center, const glm::vec3& halfExtents,
+        const glm::mat3& rot, const glm::vec3& color)
     {
         glm::vec3 c[8];
         int idx = 0;
-        for (float sx : {-1.0f, 1.0f})
-            for (float sy : {-1.0f, 1.0f})
-                for (float sz : {-1.0f, 1.0f})
-                    c[idx++] = center + rot[0] * sx * halfExtents.x + rot[1] * sy * halfExtents.y + rot[2] * sz * halfExtents.z;
+        for (float sx : { -1.0f, 1.0f })
+        {
+            for (float sy : { -1.0f, 1.0f })
+            {
+                for (float sz : { -1.0f, 1.0f })
+                {
+                    c[idx++] = center
+                        + rot[0] * sx * halfExtents.x
+                        + rot[1] * sy * halfExtents.y
+                        + rot[2] * sz * halfExtents.z;
+                }
+            }
+        }
 
         static const int edges[12][2] = {
-            {0,1},{0,2},{0,4},{3,1},{3,2},{3,7},{5,1},{5,4},{5,7},{6,2},{6,4},{6,7} };
+            { 0, 1 }, { 0, 2 }, { 0, 4 }, { 3, 1 }, { 3, 2 }, { 3, 7 },
+            { 5, 1 }, { 5, 4 }, { 5, 7 }, { 6, 2 }, { 6, 4 }, { 6, 7 }
+        };
         for (auto& edge : edges)
+        {
             DebugDraw::Line(c[edge[0]], c[edge[1]], color);
+        }
     }
 }
 
@@ -166,7 +181,8 @@ int main()
         // Build a vertical stack of 10 boxes
         for (int i = 0; i < 10; ++i)
         {
-            CreateBox(ps->scene, { 0.0f, 0.5f + i * 1.0f, 0.0f }, { 0.5f, 0.5f, 0.5f }, 1.0f);
+            CreateBox(ps->scene, { 0.0f, 0.5f + static_cast<float>(i) * 1.0f, 0.0f },
+                { 0.5f, 0.5f, 0.5f }, 1.0f);
         }
 
         // Simulate for 5 seconds (300 ticks) to let it settle
@@ -177,7 +193,10 @@ int main()
 
         // Expect it to be practically asleep (very low kinetic energy)
         bool pass = finalKe < 0.05f && maxPen < 0.02f;
-        if (pass) ++passCount;
+        if (pass)
+        {
+            ++passCount;
+        }
 
         std::ostringstream oss;
         oss << "KE=" << finalKe << " (tol 0.05), MaxPen=" << maxPen << " (tol 0.02)";
@@ -202,7 +221,8 @@ int main()
     // Stack 1: Standard uniform boxes
     for (int i = 0; i < 8; ++i)
     {
-        CreateBox(ps->scene, { -3.0f, 0.5f + i * 1.01f, 0.0f }, { 0.5f, 0.5f, 0.5f }, 1.0f);
+        CreateBox(ps->scene, { -3.0f, 0.5f + static_cast<float>(i) * 1.01f, 0.0f },
+            { 0.5f, 0.5f, 0.5f }, 1.0f);
     }
 
     // Stack 2: Interleaved sizes and masses
@@ -211,7 +231,7 @@ int main()
         float w = (i % 2 == 0) ? 1.0f : 0.5f;
         float h = (i % 2 == 0) ? 0.25f : 0.5f;
         float m = (i % 2 == 0) ? 5.0f : 1.0f;
-        float y = 0.25f + i * 0.76f;
+        float y = 0.25f + static_cast<float>(i) * 0.76f;
         CreateBox(ps->scene, { 3.0f, y, 0.0f }, { w, h, w }, m);
     }
 
@@ -223,7 +243,10 @@ int main()
         auto now = std::chrono::steady_clock::now();
         double dt = std::chrono::duration<double>(now - lastTime).count();
         lastTime = now;
-        if (dt > 0.1) dt = 0.1;
+        if (dt > 0.1)
+        {
+            dt = 0.1;
+        }
 
         physicsAccum += dt;
         while (physicsAccum >= fixedDt)

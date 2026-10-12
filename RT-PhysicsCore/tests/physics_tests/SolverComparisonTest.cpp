@@ -1,9 +1,6 @@
 /**
  * @file SolverComparisonTest.cpp
  * @brief Side-by-side comparison of Sequential Impulse and LCP Lemke contact solvers.
- *
- * Runs automated pass/fail assertions comparing solver output on identical scenarios,
- * then renders an interactive split visualization with both solvers running in parallel.
  */
 
 #include <chrono>
@@ -22,9 +19,7 @@
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/collision/Contact.h"
@@ -36,11 +31,14 @@ namespace
 {
     using namespace RT_PhysicsCore;
 
-    /// Bundles a Scene with its physics system pointers. Heap-allocated via unique_ptr
-    /// to keep the Scene address stable (systems hold Scene& references).
+    /**
+     * @struct PhysicsScene
+     * @brief Bundles a Scene with its physics pipeline and subsystem pointers.
+     */
     struct PhysicsScene
     {
         Scene scene;
+        PhysicsPipelineSystem* pipeline = nullptr;
         PhysicsSystem* physics = nullptr;
         CollisionSystem* collision = nullptr;
         ResolutionSystem* resolution = nullptr;
@@ -49,20 +47,14 @@ namespace
     std::unique_ptr<PhysicsScene> CreatePhysicsScene(ResolutionSystem::SolverMode mode)
     {
         auto ps = std::make_unique<PhysicsScene>();
-
         ps->scene.AddSystem(std::make_unique<TransformPropagationSystem>(ps->scene));
 
-        auto phys = std::make_unique<PhysicsSystem>(ps->scene);
-        ps->physics = phys.get();
-        ps->scene.AddSystem(std::move(phys));
-
-        auto col = std::make_unique<CollisionSystem>(ps->scene);
-        ps->collision = col.get();
-        ps->scene.AddSystem(std::move(col));
-
-        auto res = std::make_unique<ResolutionSystem>(ps->scene, *ps->collision, mode);
-        ps->resolution = res.get();
-        ps->scene.AddSystem(std::move(res));
+        auto pipe = std::make_unique<PhysicsPipelineSystem>(ps->scene, mode, 4);
+        ps->pipeline = pipe.get();
+        ps->physics = &pipe->GetPhysicsSystem();
+        ps->collision = &pipe->GetCollisionSystem();
+        ps->resolution = &pipe->GetResolutionSystem();
+        ps->scene.AddSystem(std::move(pipe));
 
         return ps;
     }
@@ -101,22 +93,14 @@ namespace
     }
 
     Entity CreateBox(Scene& scene, const glm::vec3& pos, const glm::vec3& halfExtents,
-        float mass, const glm::vec3& vel = glm::vec3(0.0f))
+        float mass = 1.0f)
     {
         Entity e = scene.CreateEntity();
         TransformComponent tc;
         tc.position = pos;
         scene.AddComponent(e, tc);
-        if (mass <= 0.0f)
-        {
-            scene.AddComponent(e, MakeStaticBody());
-        }
-        else
-        {
-            RigidBodyComponent rb = MakeDynamicBody(mass, ComputeBoxInertia(mass, halfExtents));
-            rb.velocity = vel;
-            scene.AddComponent(e, rb);
-        }
+        RigidBodyComponent rb = MakeDynamicBody(mass, ComputeBoxInertia(mass, halfExtents));
+        scene.AddComponent(e, rb);
         ColliderComponent cc;
         cc.shape = ColliderShape::Box;
         cc.size = halfExtents;
@@ -126,7 +110,16 @@ namespace
 
     Entity CreateWall(Scene& scene, const glm::vec3& pos, const glm::vec3& halfExtents)
     {
-        return CreateBox(scene, pos, halfExtents, 0.0f);
+        Entity e = scene.CreateEntity();
+        TransformComponent tc;
+        tc.position = pos;
+        scene.AddComponent(e, tc);
+        scene.AddComponent(e, MakeStaticBody());
+        ColliderComponent cc;
+        cc.shape = ColliderShape::Box;
+        cc.size = halfExtents;
+        scene.AddComponent(e, cc);
+        return e;
     }
 
     void StepScene(Scene& scene, int ticks, double dt = 1.0 / 60.0)
@@ -145,11 +138,11 @@ namespace
     {
         glm::vec3 c[8];
         int idx = 0;
-        for (float sx : {-1.0f, 1.0f})
+        for (float sx : { -1.0f, 1.0f })
         {
-            for (float sy : {-1.0f, 1.0f})
+            for (float sy : { -1.0f, 1.0f })
             {
-                for (float sz : {-1.0f, 1.0f})
+                for (float sz : { -1.0f, 1.0f })
                 {
                     c[idx++] = center
                         + rot[0] * sx * halfExtents.x
@@ -159,8 +152,8 @@ namespace
             }
         }
         static const int edges[12][2] = {
-            {0,1},{0,2},{0,4},{3,1},{3,2},{3,7},
-            {5,1},{5,4},{5,7},{6,2},{6,4},{6,7}
+            { 0, 1 }, { 0, 2 }, { 0, 4 }, { 3, 1 }, { 3, 2 }, { 3, 7 },
+            { 5, 1 }, { 5, 4 }, { 5, 7 }, { 6, 2 }, { 6, 4 }, { 6, 7 }
         };
         for (auto& edge : edges)
         {
@@ -210,7 +203,7 @@ namespace
         {
             for (int i = 0; i < c.pointCount; ++i)
             {
-                glm::vec3 p = c.points[i] + offset;
+                glm::vec3 p = c.points[i].position + offset;
                 DebugDraw::Sphere(p, 0.05f, { 1.0f, 1.0f, 0.0f }, 8, false);
                 DebugDraw::Line(p, p + c.normal * 0.4f, { 1.0f, 0.0f, 0.0f }, false);
             }
@@ -221,6 +214,10 @@ namespace
 
     using ScenarioSetupFn = std::function<Entity(Scene&)>;
 
+    /**
+     * @struct ComparisonTestCase
+     * @brief Defines an assertion scenario comparing SI against LCP Lemke solvers.
+     */
     struct ComparisonTestCase
     {
         std::string name;
@@ -238,15 +235,15 @@ namespace
             [](Scene& s) -> Entity
             {
                 CreateGround(s);
-                return CreateSphere(s, {0.0f, 5.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
+                return CreateSphere(s, { 0.0f, 5.0f, 0.0f }, { 0.0f, 0.0f, 0.0f });
             },
             180, 0.15f, 0.2f });
 
         tests.push_back({ "Head-on sphere collision (equal mass)",
             [](Scene& s) -> Entity
             {
-                CreateSphere(s, {-3.0f, 1.0f, 0.0f}, {5.0f, 0.0f, 0.0f});
-                return CreateSphere(s, {3.0f, 1.0f, 0.0f}, {-5.0f, 0.0f, 0.0f});
+                CreateSphere(s, { -3.0f, 1.0f, 0.0f }, { 5.0f, 0.0f, 0.0f });
+                return CreateSphere(s, { 3.0f, 1.0f, 0.0f }, { -5.0f, 0.0f, 0.0f });
             },
             30, 0.1f, 0.3f });
 
@@ -254,9 +251,9 @@ namespace
             [](Scene& s) -> Entity
             {
                 CreateGround(s);
-                CreateSphere(s, {-3.0f, 0.5f, 0.0f}, {6.0f, 0.0f, 0.0f});
-                CreateSphere(s, {0.0f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f});
-                return CreateSphere(s, {3.0f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f});
+                CreateSphere(s, { -3.0f, 0.5f, 0.0f }, { 6.0f, 0.0f, 0.0f });
+                CreateSphere(s, { 0.0f, 0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f });
+                return CreateSphere(s, { 3.0f, 0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f });
             },
             60, 0.3f, 0.5f });
 
@@ -264,9 +261,9 @@ namespace
             [](Scene& s) -> Entity
             {
                 CreateGround(s);
-                CreateBox(s, {0.0f, 0.5f, 0.0f}, {0.5f, 0.5f, 0.5f}, 1.0f);
-                CreateBox(s, {0.0f, 1.5f, 0.0f}, {0.5f, 0.5f, 0.5f}, 1.0f);
-                return CreateBox(s, {0.0f, 2.5f, 0.0f}, {0.5f, 0.5f, 0.5f}, 1.0f);
+                CreateBox(s, { 0.0f, 0.5f, 0.0f }, { 0.5f, 0.5f, 0.5f }, 1.0f);
+                CreateBox(s, { 0.0f, 1.5f, 0.0f }, { 0.5f, 0.5f, 0.5f }, 1.0f);
+                return CreateBox(s, { 0.0f, 2.5f, 0.0f }, { 0.5f, 0.5f, 0.5f }, 1.0f);
             },
             300, 0.5f, 0.3f });
 
@@ -274,8 +271,8 @@ namespace
             [](Scene& s) -> Entity
             {
                 CreateGround(s);
-                CreateWall(s, {-5.5f, 2.5f, 0.0f}, {0.5f, 5.0f, 5.0f});
-                return CreateSphere(s, {-4.0f, 2.0f, 0.0f}, {-5.0f, -5.0f, 0.0f});
+                CreateWall(s, { -5.5f, 2.5f, 0.0f }, { 0.5f, 5.0f, 5.0f });
+                return CreateSphere(s, { -4.0f, 2.0f, 0.0f }, { -5.0f, -5.0f, 0.0f });
             },
             60, 0.5f, 1.0f });
 

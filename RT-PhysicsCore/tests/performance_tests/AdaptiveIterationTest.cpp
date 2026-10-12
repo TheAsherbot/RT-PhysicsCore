@@ -1,9 +1,6 @@
 /**
  * @file AdaptiveIterationTest.cpp
- * @brief Verifies ResolutionSystem adaptive time budgeting.
- *
- * Runs a heavy scene using IterationMode::Adaptive and ensures the resolution
- * step time stays strictly within the specified millisecond limits.
+ * @brief Verifies ResolutionSystem performance and iteration budgeting.
  */
 
 #include <algorithm>
@@ -17,9 +14,7 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
@@ -35,20 +30,13 @@ int main()
 
     Scene scene;
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-    scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
+    auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+    PhysicsPipelineSystem* pipelinePtr = pipeline.get();
+    scene.AddSystem(std::move(pipeline));
 
-    auto colSys = std::make_unique<CollisionSystem>(scene);
-    CollisionSystem* colSysPtr = colSys.get();
-    scene.AddSystem(std::move(colSys));
-
-    auto resSys = std::make_unique<ResolutionSystem>(scene, *colSysPtr, ResolutionSystem::SolverMode::SequentialImpulses);
-    ResolutionSystem* resSysPtr = resSys.get();
-    scene.AddSystem(std::move(resSys));
-
-    // Turn on Adaptive mode with strict budgets
-    resSysPtr->SetIterationMode(ResolutionSystem::IterationMode::Adaptive);
-    resSysPtr->SetVelocityTimeBudgetMs(0.5f); // 0.5 ms limit
-    resSysPtr->SetPositionTimeBudgetMs(0.2f); // 0.2 ms limit
+    // Configure iteration counts for velocity and position passes
+    pipelinePtr->GetResolutionSystem().SetVelocityIterations(8);
+    pipelinePtr->GetResolutionSystem().SetPositionIterations(3);
 
     // Ground
     Entity g = scene.CreateEntity();
@@ -61,7 +49,7 @@ int main()
     gcc.size = { 50.0f, 0.5f, 50.0f };
     scene.AddComponent(g, gcc);
 
-    // Create a very heavy scene (150 objects) that would normally take ~2ms to resolve
+    // Create a heavy scene (150 objects) that tests solver performance
     for (int i = 0; i < 150; ++i)
     {
         Entity e = scene.CreateEntity();
@@ -85,26 +73,26 @@ int main()
     // Measure ResolutionSystem times over 100 frames
     int framesExceeded = 0;
     double maxMs = 0.0;
-    constexpr double totalBudget = 0.5 + 0.2; // 0.7 ms total
+    constexpr double totalBudget = 0.7; // 0.7 ms total budget
 
     for (int i = 0; i < 100; ++i)
     {
-        // We only measure the resolution system here
+        // Measure only the resolution system
         auto start = std::chrono::high_resolution_clock::now();
-        resSysPtr->FixedUpdate(1.0 / 60.0);
+        pipelinePtr->GetResolutionSystem().FixedUpdate(1.0 / 60.0);
         auto end = std::chrono::high_resolution_clock::now();
 
         double ms = std::chrono::duration<double, std::milli>(end - start).count();
         maxMs = std::max(maxMs, ms);
 
-        // Give a little leeway (0.1ms) for thread timing noise
+        // Leeway (0.1ms) for thread timing noise
         if (ms > totalBudget + 0.1)
         {
             ++framesExceeded;
         }
 
         // Run the rest of the systems to advance state
-        colSysPtr->FixedUpdate(1.0 / 60.0);
+        pipelinePtr->GetCollisionSystem().FixedUpdate(1.0 / 60.0);
     }
 
     std::ostringstream oss;

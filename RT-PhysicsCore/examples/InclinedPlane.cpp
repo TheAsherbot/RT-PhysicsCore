@@ -4,6 +4,7 @@
  */
 
 #include <memory>
+#include <string>
 #include <vector>
 #include <cmath>
 #include <GLFW/glfw3.h>
@@ -13,12 +14,10 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
 #include "RT-PhysicsCore/physics/components/PhysicsMaterialComponent.h"
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
@@ -26,6 +25,23 @@
 #include "RT-PhysicsCore/utils/DebugDraw.h"
 
 #include <glm/gtc/quaternion.hpp>
+
+namespace
+{
+    using namespace RT_PhysicsCore;
+
+    /**
+     * @struct TestObject
+     * @brief Encapsulates entity handle and material properties for ramp friction test bodies.
+     */
+    struct TestObject
+    {
+        Entity e;
+        MaterialId mat;
+        std::string name;
+        float defaultX;
+    };
+}
 
 int main()
 {
@@ -41,11 +57,8 @@ int main()
     Scene scene;
 
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-    scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-    auto colSys = std::make_unique<CollisionSystem>(scene);
-    CollisionSystem* colSysPtr = colSys.get();
-    scene.AddSystem(std::move(colSys));
-    scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr, ResolutionSystem::SolverMode::SequentialImpulses));
+    scene.AddSystem(std::make_unique<PhysicsPipelineSystem>(
+        scene, ResolutionSystem::SolverMode::SequentialImpulses, 4));
     scene.AddSystem(std::make_unique<RenderSystem>(scene, renderer));
 
     // Ramp (Static)
@@ -67,13 +80,6 @@ int main()
     rpm.material = MaterialId::Rubber;
     scene.AddComponent(ramp, rpm);
 
-    struct TestObject
-    {
-        Entity e;
-        MaterialId mat;
-        std::string name;
-        float defaultX;
-    };
     std::vector<TestObject> objects;
 
     auto spawnObjects = [&]()
@@ -189,7 +195,7 @@ int main()
             }
         });
 
-    engine.SetRenderCallback([&](double)
+    engine.SetRenderCallback([&](double /*alpha*/)
         {
             renderer.BeginFrame();
             scene.RenderUpdateSystems();

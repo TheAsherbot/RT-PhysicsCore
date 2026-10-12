@@ -1,9 +1,6 @@
 /**
  * @file BroadphaseScalingTest.cpp
  * @brief Measures CollisionSystem broadphase scaling performance.
- *
- * Spawns N non-overlapping objects and measures the time required to perform
- * broadphase sweeps, isolating AABB intersection performance.
  */
 
 #include <chrono>
@@ -17,20 +14,24 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 
 namespace
 {
     using namespace RT_PhysicsCore;
 
+    /**
+     * @brief Measures broadphase collision detection time for a given object count tier.
+     * @param objectCount Number of non-overlapping boxes to simulate in a 3D grid.
+     */
     void RunTier(int objectCount)
     {
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        PhysicsPipelineSystem* pipelinePtr = pipeline.get();
+        scene.AddSystem(std::move(pipeline));
 
         // Create a 3D grid of objects spaced far apart so they don't overlap
         int side = static_cast<int>(std::ceil(std::cbrt(objectCount)));
@@ -68,7 +69,7 @@ namespace
         for (int i = 0; i < samples; ++i)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            colSysPtr->FixedUpdate(1.0 / 60.0);
+            pipelinePtr->GetCollisionSystem().FixedUpdate(1.0 / 60.0);
             auto end = std::chrono::high_resolution_clock::now();
 
             totalMs += std::chrono::duration<double, std::milli>(end - start).count();

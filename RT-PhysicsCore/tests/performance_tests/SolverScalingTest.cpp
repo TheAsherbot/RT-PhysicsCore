@@ -1,9 +1,6 @@
 /**
  * @file SolverScalingTest.cpp
  * @brief Measures ResolutionSystem performance scaling (SI vs LCP).
- *
- * Drops objects into a pile and times solver iterations to establish
- * O(n) vs O(n^3) scaling behavior.
  */
 
 #include <chrono>
@@ -17,9 +14,7 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
@@ -28,19 +23,19 @@ namespace
 {
     using namespace RT_PhysicsCore;
 
+    /**
+     * @brief Measures solver execution time for a given object count and solver mode.
+     * @param objectCount Number of stacked objects to simulate.
+     * @param mode The solver resolution mode (e.g. SequentialImpulses, Exact).
+     * @param modeName Descriptive display name for the solver mode.
+     */
     void MeasureSolver(int objectCount, ResolutionSystem::SolverMode mode, const std::string& modeName)
     {
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-
-        auto colSys = std::make_unique<CollisionSystem>(scene);
-        CollisionSystem* colSysPtr = colSys.get();
-        scene.AddSystem(std::move(colSys));
-
-        auto resSys = std::make_unique<ResolutionSystem>(scene, *colSysPtr, mode);
-        ResolutionSystem* resSysPtr = resSys.get();
-        scene.AddSystem(std::move(resSys));
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, mode, 4);
+        PhysicsPipelineSystem* pipelinePtr = pipeline.get();
+        scene.AddSystem(std::move(pipeline));
 
         // Ground
         Entity g = scene.CreateEntity();
@@ -74,7 +69,7 @@ namespace
             scene.FixedUpdateSystems();
         }
 
-        int contacts = colSysPtr->GetContacts().size();
+        int contacts = static_cast<int>(pipelinePtr->GetCollisionSystem().GetContacts().size());
 
         // Measure resolution time
         constexpr int samples = 30;
@@ -83,7 +78,7 @@ namespace
         for (int i = 0; i < samples; ++i)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            resSysPtr->FixedUpdate(1.0 / 60.0);
+            pipelinePtr->GetResolutionSystem().FixedUpdate(1.0 / 60.0);
             auto end = std::chrono::high_resolution_clock::now();
 
             totalMs += std::chrono::duration<double, std::milli>(end - start).count();

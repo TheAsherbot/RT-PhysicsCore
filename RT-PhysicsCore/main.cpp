@@ -18,12 +18,10 @@
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
 
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
@@ -56,18 +54,8 @@ int main()
 
     // Create and register core systems
     scene.AddSystem(std::make_unique<RT_PhysicsCore::TransformPropagationSystem>(scene));
-    scene.AddSystem(std::make_unique<RT_PhysicsCore::PhysicsSystem>(scene));
-
-    auto collisionSystem = std::make_unique<RT_PhysicsCore::CollisionSystem>(scene);
-    RT_PhysicsCore::CollisionSystem* collisionSystemPtr = collisionSystem.get();
-    scene.AddSystem(std::move(collisionSystem));
-
-    auto resolutionSystem = std::make_unique<RT_PhysicsCore::ResolutionSystem>(
-        scene, *collisionSystemPtr, RT_PhysicsCore::ResolutionSystem::SolverMode::SequentialImpulses);
-    RT_PhysicsCore::ResolutionSystem* resolutionSystemPtr = resolutionSystem.get();
-    scene.AddSystem(std::move(resolutionSystem));
-    (void)resolutionSystemPtr;
-
+    scene.AddSystem(std::make_unique<RT_PhysicsCore::PhysicsPipelineSystem>(
+        scene, RT_PhysicsCore::ResolutionSystem::SolverMode::SequentialImpulses, 4));
     scene.AddSystem(std::make_unique<RT_PhysicsCore::RenderSystem>(scene, renderer));
 
     // Dynamic falling sphere

@@ -19,12 +19,10 @@
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
 #include "RT-PhysicsCore/core/ecs/systems/TransformPropagationSystem.h"
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
-#include "RT-PhysicsCore/physics/systems/PhysicsSystem.h"
+#include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 #include "RT-PhysicsCore/physics/MassProperties.h"
-#include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
-#include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
 #include "RT-PhysicsCore/rendering/Renderer.h"
 #include "RT-PhysicsCore/rendering/systems/RenderSystem.h"
 #include "RT-PhysicsCore/rendering/components/MeshComponent.h"
@@ -66,11 +64,10 @@ int main()
     Scene scene;
 
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-    scene.AddSystem(std::make_unique<PhysicsSystem>(scene));
-    auto colSys = std::make_unique<CollisionSystem>(scene);
-    CollisionSystem* colSysPtr = colSys.get();
-    scene.AddSystem(std::move(colSys));
-    scene.AddSystem(std::make_unique<ResolutionSystem>(scene, *colSysPtr, ResolutionSystem::SolverMode::SequentialImpulses));
+    auto pipeline = std::make_unique<PhysicsPipelineSystem>(
+        scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+    PhysicsPipelineSystem* pipelinePtr = pipeline.get();
+    scene.AddSystem(std::move(pipeline));
     scene.AddSystem(std::make_unique<RenderSystem>(scene, renderer));
 
     // Ground
@@ -98,6 +95,7 @@ int main()
     std::vector<ActiveBox> activeBoxes;
     double totalTime = 0.0;
     double spawnTimer = 0.0;
+
     bool drawContacts = false;
     bool drawNormals = false;
 
@@ -184,17 +182,17 @@ int main()
 
             if (drawContacts || drawNormals)
             {
-                for (const auto& c : colSysPtr->GetContacts())
+                for (const auto& c : pipelinePtr->GetCollisionSystem().GetContacts())
                 {
                     for (int i = 0; i < c.pointCount; ++i)
                     {
                         if (drawContacts)
                         {
-                            DebugDraw::Sphere(c.points[i], 0.05f, { 1.0f, 1.0f, 0.0f });
+                            DebugDraw::Sphere(c.points[i].position, 0.05f, { 1.0f, 1.0f, 0.0f });
                         }
                         if (drawNormals)
                         {
-                            DebugDraw::Line(c.points[i], c.points[i] + c.normal * 0.4f, { 1.0f, 0.0f, 0.0f });
+                            DebugDraw::Line(c.points[i].position, c.points[i].position + c.normal * 0.4f, { 1.0f, 0.0f, 0.0f });
                         }
                     }
                 }
