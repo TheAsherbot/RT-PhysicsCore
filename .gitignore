@@ -4,3 +4,8 @@ build/
 CMakeFiles/
 CMakeCache.txt
 GEMINI.md
+
+imgui.ini
+*.log
+build_test/
+imgui.ini

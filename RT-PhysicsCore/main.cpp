@@ -48,7 +48,9 @@ int main()
         return 1;
     }
 
-    RT_PhysicsCore::Engine engine(60.0); // 60 Hz physics
+    glfwSwapInterval(0);
+
+    RT_PhysicsCore::Engine engine(60.0, 74); // 60 Hz physics
 
     RT_PhysicsCore::Scene scene;
 

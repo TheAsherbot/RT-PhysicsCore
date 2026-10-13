@@ -39,15 +39,28 @@ namespace RT_PhysicsCore
         using RenderCallback = std::function<void(double alpha)>;
 
         /**
-         * @brief Constructs an Engine instance configured with a target physics frequency.
+         * @brief Constructs an Engine instance configured with a target physics frequency and optional maximum frame rate.
          * @param physicsHz Frequency of the fixed physics update in Hertz (default: 60 Hz).
+         * @param maxFrameRate Target maximum frame rate in frames per second, or 0.0 for uncapped (default: 0.0).
          */
-        Engine(double physicsHz = 60.0);
+        Engine(double physicsHz = 60.0, double maxFrameRate = 0.0);
 
         /**
          * @brief Destructor. Cleans up internal timestep resources.
          */
         ~Engine();
+
+        /**
+         * @brief Sets the maximum frame rate limit.
+         * @param maxFrameRate Target frame rate in frames per second. Pass 0.0 or negative for uncapped.
+         */
+        void SetMaxFrameRate(double maxFrameRate);
+
+        /**
+         * @brief Gets the current maximum frame rate limit.
+         * @return Maximum frame rate in frames per second, or 0.0 if uncapped.
+         */
+        double GetMaxFrameRate() const;
 
         /**
          * @brief Registers the callback for fixed-rate physics simulation steps.
@@ -79,6 +92,7 @@ namespace RT_PhysicsCore
 
     private:
         bool isRunning = true;
+        double maxFrameRate = 0.0;
         FixedTimestep* fixedTimestep;
 
         FixedUpdateCallback fixedUpdateCallback;
