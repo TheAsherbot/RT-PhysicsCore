@@ -36,6 +36,7 @@ namespace RT_PhysicsCore
         auto entities = scene.Query<TransformComponent, RigidBodyComponent>();
         for (Entity e : entities)
         {
+            auto* transform = scene.GetComponent<TransformComponent>(e);
             auto* body = scene.GetComponent<RigidBodyComponent>(e);
             if (!body || body->invMass <= 0.0)
             {
@@ -45,6 +46,13 @@ namespace RT_PhysicsCore
                     body->torqueAccum = Vec3(0.0);
                 }
                 continue;
+            }
+
+            // Maintain up-to-date world-space inverse inertia tensor before computing angular velocity
+            if (transform)
+            {
+                Mat3 rotation = glm::mat3_cast(transform->rotation);
+                body->invInertiaWorld = rotation * body->invInertiaBody * glm::transpose(rotation);
             }
 
             // Force accumulation: gravity acts uniformly through volume without torque contribution

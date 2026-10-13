@@ -88,14 +88,23 @@ namespace RT_PhysicsCore
             entries.push_back({ e, sweptAabb, pose, materialId });
         }
 
-        // Naive O(n^2) broad phase - fine at current body counts. Swap in
-        // sweep-and-prune later if it becomes the bottleneck; it wouldn't
-        // change which pairs end up colliding, only how fast non-colliding
-        // ones get rejected.
+        // Broad-phase swept AABB overlap testing
         for (size_t i = 0; i < entries.size(); ++i)
         {
+            auto* bodyI = scene.GetComponent<RigidBodyComponent>(entries[i].entity);
+            bool dynamicI = (bodyI && bodyI->invMass > 0.0);
+
             for (size_t j = i + 1; j < entries.size(); ++j)
             {
+                auto* bodyJ = scene.GetComponent<RigidBodyComponent>(entries[j].entity);
+                bool dynamicJ = (bodyJ && bodyJ->invMass > 0.0);
+
+                // Skip static-static candidate pairs
+                if (!dynamicI && !dynamicJ)
+                {
+                    continue;
+                }
+
                 if (!Overlaps(entries[i].sweptAabb, entries[j].sweptAabb))
                 {
                     continue;

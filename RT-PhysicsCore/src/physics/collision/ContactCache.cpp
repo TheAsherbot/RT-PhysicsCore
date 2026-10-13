@@ -51,12 +51,14 @@ namespace RT_PhysicsCore
             return;
         }
 
-        const CachedManifold& cached = it->second;
+        CachedManifold& cached = it->second;
 
         if (glm::dot(cached.normal, contact.normal) < 0.95)
         {
             return;
         }
+
+        cached.lastSubstepIndex = currentSubstepIndex;
 
         bool inverted = (contact.a > contact.b);
 

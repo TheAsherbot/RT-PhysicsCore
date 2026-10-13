@@ -52,8 +52,8 @@ int main()
             // Ground
             Entity ground = scene.CreateEntity();
             TransformComponent gtc;
-            gtc.position = { 0.0f, -0.5f, 0.0f };
-            gtc.scale = { 30.0f, 1.0f, 30.0f };
+            gtc.position = { 25.0f, -0.5f, 0.0f };
+            gtc.scale = { 100.0f, 1.0f, 30.0f };
             scene.AddComponent(ground, gtc);
             scene.AddComponent(ground, MakeStaticBody());
             MeshComponent gm;
@@ -62,11 +62,11 @@ int main()
             scene.AddComponent(ground, gm);
             ColliderComponent gcc;
             gcc.shape = ColliderShape::Box;
-            gcc.size = { 15.0f, 0.5f, 15.0f };
+            gcc.size = { 50.0f, 0.5f, 50.0f };
             scene.AddComponent(ground, gcc);
 
             // Dominos
-            for (int i = 0; i < 40; ++i)
+            for (int i = 0; i < 200; ++i)
             {
                 float t = static_cast<float>(i) / 39.0f;
                 float x = -6.0f + 12.0f * t;
@@ -93,7 +93,7 @@ int main()
 
                 MeshComponent mc;
                 mc.shape = PrimitiveShape::Cube;
-                mc.color = { 0.1f, 0.3f + 0.7f * t, 0.9f - 0.7f * t };
+                mc.color = { 0.1f, 0.3f + 0.7f * t / 5, 0.9f - 0.7f * t / 5};
                 scene.AddComponent(e, mc);
 
                 PhysicsMaterialComponent pm;

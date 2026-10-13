@@ -97,6 +97,16 @@ namespace RT_PhysicsCore
             Real deltaT = (gjk.distance - targetGap) / totalClosingBound;
             if (deltaT < kCastEpsilon)
             {
+                // If distance has converged to within numerical epsilon of targetGap mid-sweep,
+                // this represents an impact at time t.
+                if (t >= kCastEpsilon)
+                {
+                    result.hasHit = true;
+                    result.timeOfImpact = t;
+                    result.normal = gjk.normal;
+                    result.contactPoint = 0.5 * (gjk.closestPointA + gjk.closestPointB);
+                    return result;
+                }
                 break;
             }
 

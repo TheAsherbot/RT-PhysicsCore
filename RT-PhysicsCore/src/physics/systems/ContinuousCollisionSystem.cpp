@@ -34,7 +34,7 @@ namespace RT_PhysicsCore
 
     void ContinuousCollisionSystem::ExecuteCCD(double h, Real speculativeMargin)
     {
-        auto dynamicEntities = scene.Query<TransformComponent, RigidBodyComponent, ColliderComponent>();
+        auto entities = scene.Query<TransformComponent, ColliderComponent>();
 
         struct BodyRecord
         {
@@ -50,13 +50,13 @@ namespace RT_PhysicsCore
         std::vector<BodyRecord> fastBodies;
         std::vector<BodyRecord> allColliders;
 
-        for (Entity e : dynamicEntities)
+        for (Entity e : entities)
         {
             auto* transform = scene.GetComponent<TransformComponent>(e);
-            auto* body = scene.GetComponent<RigidBodyComponent>(e);
             auto* collider = scene.GetComponent<ColliderComponent>(e);
+            auto* body = scene.GetComponent<RigidBodyComponent>(e);
 
-            if (!transform || !body || !collider)
+            if (!transform || !collider)
             {
                 continue;
             }
@@ -70,12 +70,12 @@ namespace RT_PhysicsCore
                 collider->size.x : 0.0;
 
             Real boundRadius = Support::ComputeBoundingRadius(*collider);
-            Vec3 linDisp = body->velocity * h;
+            Vec3 linDisp = (body && body->invMass > 0.0) ? (body->velocity * h) : Vec3(0.0);
 
             BodyRecord record{ e, transform, body, collider, core, boundRadius, linDisp };
             allColliders.push_back(record);
 
-            if (body->invMass > 0.0)
+            if (body && body->invMass > 0.0)
             {
                 // Measure total potential motion displacement over the substep
                 Real linearSpeed = glm::length(body->velocity);
@@ -106,14 +106,16 @@ namespace RT_PhysicsCore
                 }
 
                 // Skip static-static interactions
-                if (fast.body->invMass <= 0.0 && target.body->invMass <= 0.0)
+                if ((!fast.body || fast.body->invMass <= 0.0) && (!target.body || target.body->invMass <= 0.0))
                 {
                     continue;
                 }
 
+                Vec3 targetAngVel = (target.body && target.body->invMass > 0.0) ? target.body->angularVelocity : Vec3(0.0);
+
                 ShapeCastResult castRes = ShapeCast::Cast(
                     fast.core, fast.linDisp, fast.body->angularVelocity, fast.boundRadius,
-                    target.core, target.linDisp, target.body->angularVelocity, target.boundRadius,
+                    target.core, target.linDisp, targetAngVel, target.boundRadius,
                     h, targetSkinGap, maxCastIterations);
 
                 if (castRes.hasHit && castRes.timeOfImpact > 1e-6 && castRes.timeOfImpact < fast.body->motionFraction)
@@ -122,7 +124,7 @@ namespace RT_PhysicsCore
                     fast.body->motionFraction = castRes.timeOfImpact;
 
                     // If target is also dynamic, mirror the motion clamp to maintain relative alignment
-                    if (target.body->invMass > 0.0)
+                    if (target.body && target.body->invMass > 0.0)
                     {
                         target.body->motionFraction = std::min(target.body->motionFraction, castRes.timeOfImpact);
                     }

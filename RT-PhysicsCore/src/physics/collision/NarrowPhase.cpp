@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <utility>
 
 namespace RT_PhysicsCore
 {
@@ -136,7 +137,7 @@ namespace RT_PhysicsCore
 
                 Real sign = (local[axis] >= 0.0) ? 1.0 : -1.0;
                 normalLocal = Vec3(0.0);
-                normalLocal[axis] = sign;
+                normalLocal[axis] = -sign; // Preserves continuity pointing from Sphere (A) toward Box (B)
                 closestLocal = local;
                 closestLocal[axis] = sign * boxHalf[axis];
                 signedDistance = -(faceDist[axis] + sphereRadius);
@@ -302,6 +303,13 @@ namespace RT_PhysicsCore
                         }
                     }
                 }
+            }
+
+            // SphereBox treats Capsule sample as A and Box as B.
+            // Swap anchors so localAnchorA corresponds to Box and localAnchorB corresponds to Capsule.
+            for (int i = 0; i < out.pointCount; ++i)
+            {
+                std::swap(out.points[i].localAnchorA, out.points[i].localAnchorB);
             }
 
             return true;
@@ -596,6 +604,10 @@ namespace RT_PhysicsCore
             if (hit)
             {
                 outContact.normal = -outContact.normal;
+                for (int i = 0; i < outContact.pointCount; ++i)
+                {
+                    std::swap(outContact.points[i].localAnchorA, outContact.points[i].localAnchorB);
+                }
             }
             return hit;
         }
@@ -615,6 +627,10 @@ namespace RT_PhysicsCore
             if (hit)
             {
                 outContact.normal = -outContact.normal;
+                for (int i = 0; i < outContact.pointCount; ++i)
+                {
+                    std::swap(outContact.points[i].localAnchorA, outContact.points[i].localAnchorB);
+                }
             }
             return hit;
         }
@@ -643,6 +659,10 @@ namespace RT_PhysicsCore
             if (hit)
             {
                 outContact.normal = -outContact.normal;
+                for (int i = 0; i < outContact.pointCount; ++i)
+                {
+                    std::swap(outContact.points[i].localAnchorA, outContact.points[i].localAnchorB);
+                }
             }
             return hit;
         }

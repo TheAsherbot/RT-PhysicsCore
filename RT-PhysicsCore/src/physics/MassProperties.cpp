@@ -80,6 +80,7 @@ namespace RT_PhysicsCore
         body.invMass = 1.0f / mass;
         body.inertiaBody = inertiaBody;
         body.invInertiaBody = glm::inverse(inertiaBody);
+        body.invInertiaWorld = body.invInertiaBody;
         return body;
     }
 
@@ -90,6 +91,7 @@ namespace RT_PhysicsCore
         body.invMass = 0.0f;
         body.inertiaBody = glm::mat3(0.0f);
         body.invInertiaBody = glm::mat3(0.0f);
+        body.invInertiaWorld = glm::mat3(0.0f);
         return body;
     }
 }

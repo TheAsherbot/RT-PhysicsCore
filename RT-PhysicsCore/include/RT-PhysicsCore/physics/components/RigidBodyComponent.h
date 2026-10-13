@@ -25,8 +25,8 @@ namespace RT_PhysicsCore
         Real mass{ 1.0f };                     ///< Total mass in kilograms.
         Real invMass{ 1.0f };                  ///< Inverse mass (0.0 = static/immovable).
 
-        Mat3 inertiaBody{ 1.0f };          ///< Principal body-space inertia tensor about center of mass.
-        Mat3 invInertiaBody{ 1.0f };       ///< Inverse body-space inertia tensor.
+        Mat3 inertiaBody{ 1.0f };              ///< Principal body-space inertia tensor about center of mass.
+        Mat3 invInertiaBody{ 1.0f };           ///< Inverse body-space inertia tensor.
 
         Vec3 velocity{ 0.0f, 0.0f, 0.0f };     ///< Linear velocity in world space (m/s).
         Vec3 forceAccum{ 0.0f, 0.0f, 0.0f };   ///< Accumulated world forces for current step (cleared each tick).
@@ -36,7 +36,7 @@ namespace RT_PhysicsCore
 
         // Cached quantities derived every FixedUpdate:
         Vec3 angularVelocity{ 0.0f, 0.0f, 0.0f }; ///< Derived instantaneous angular velocity (rad/s).
-        Mat3 invInertiaWorld{ 0.0f };             ///< Derived world-space inverse inertia tensor (R * I^-1 * R^T).
+        Mat3 invInertiaWorld{ 1.0f };             ///< Derived world-space inverse inertia tensor (R * I^-1 * R^T).
 
         Vec3 pseudoVelocity{ 0.0, 0.0, 0.0 };       ///< Split-impulse linear pseudo-velocity for penetration recovery.
         Vec3 pseudoAngularVelocity{ 0.0, 0.0, 0.0 };///< Split-impulse angular pseudo-velocity for penetration recovery.
