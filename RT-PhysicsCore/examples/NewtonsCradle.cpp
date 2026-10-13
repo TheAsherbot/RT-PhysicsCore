@@ -36,7 +36,7 @@ int main()
 
     scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
     auto pipeline = std::make_unique<PhysicsPipelineSystem>(
-        scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        scene, ResolutionSystem::SolverMode::Exact, 4);
     pipeline->GetPhysicsSystem().SetGravity({ 0.0f, 0.0f, 0.0f }); // Zero gravity
     scene.AddSystem(std::move(pipeline));
     scene.AddSystem(std::make_unique<RenderSystem>(scene, renderer));

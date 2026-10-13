@@ -94,7 +94,7 @@ namespace RT_PhysicsCore
                 const ContactPoint& cp = c.points[i];
                 ConstraintPoint& p = cc.points[i];
 
-                p.rA = cp.position; // Transformed relative to center of mass in caller or set via localAnchor
+                p.rA = cp.position;
                 p.rB = cp.position;
                 p.restitution = c.restitution;
                 p.staticFriction = c.staticFriction;
@@ -292,33 +292,45 @@ namespace RT_PhysicsCore
 
     void IterativeSolver::SolveRestitution(std::vector<ContactConstraint>& constraints, double /*h*/)
     {
-        for (auto& cc : constraints)
+        // Multi-pass shockwave propagation for chains of elastic touching bodies (e.g. Newton's Cradle)
+        int maxPasses = std::min(10, std::max(4, static_cast<int>(constraints.size())));
+
+        for (int pass = 0; pass < maxPasses; ++pass)
         {
-            RigidBodyComponent* bA = cc.bodyA;
-            RigidBodyComponent* bB = cc.bodyB;
+            bool anyImpact = false;
 
-            Real invMassA = bA ? bA->invMass : 0.0;
-            Real invMassB = bB ? bB->invMass : 0.0;
-            Mat3 invInertiaA = bA ? bA->invInertiaWorld : Mat3(0.0);
-            Mat3 invInertiaB = bB ? bB->invInertiaWorld : Mat3(0.0);
-
-            for (auto& p : cc.points)
+            for (auto& cc : constraints)
             {
-                if (p.preSolveRelVelN >= -restitutionVelocityThreshold || p.normalImpulse <= 0.0)
-                {
-                    continue;
-                }
+                RigidBodyComponent* bA = cc.bodyA;
+                RigidBodyComponent* bB = cc.bodyB;
 
-                Vec3 vA = bA ? (bA->velocity + glm::cross(bA->angularVelocity, p.rA)) : Vec3(0.0);
-                Vec3 vB = bB ? (bB->velocity + glm::cross(bB->angularVelocity, p.rB)) : Vec3(0.0);
-                Real vn = glm::dot(vB - vA, cc.normal);
+                Real invMassA = bA ? bA->invMass : 0.0;
+                Real invMassB = bB ? bB->invMass : 0.0;
+                Mat3 invInertiaA = bA ? bA->invInertiaWorld : Mat3(0.0);
+                Mat3 invInertiaB = bB ? bB->invInertiaWorld : Mat3(0.0);
 
-                Real targetVn = -p.restitution * p.preSolveRelVelN;
-                if (vn < targetVn)
+                for (auto& p : cc.points)
                 {
+                    if (p.restitution <= 0.0)
+                    {
+                        continue;
+                    }
+
+                    // Dynamically evaluate incoming normal velocity at point
+                    Vec3 vA = bA ? (bA->velocity + glm::cross(bA->angularVelocity, p.rA)) : Vec3(0.0);
+                    Vec3 vB = bB ? (bB->velocity + glm::cross(bB->angularVelocity, p.rB)) : Vec3(0.0);
+                    Real vn = glm::dot(vB - vA, cc.normal);
+
+                    // Only trigger if bodies are closing faster than the restitution threshold
+                    if (vn >= -restitutionVelocityThreshold)
+                    {
+                        continue;
+                    }
+
                     Real Kn = invMassA + invMassB + AngularEffectiveMass(p.rA, cc.normal, invInertiaA) + AngularEffectiveMass(p.rB, cc.normal, invInertiaB);
                     if (Kn > kSolverEpsilon)
                     {
+                        Real targetVn = -p.restitution * vn;
                         Real delta = (targetVn - vn) / Kn;
                         Vec3 impulse = delta * cc.normal;
 
@@ -334,8 +346,15 @@ namespace RT_PhysicsCore
                             bB->angularMomentum += glm::cross(p.rB, impulse);
                             bB->angularVelocity = bB->invInertiaWorld * bB->angularMomentum;
                         }
+
+                        anyImpact = true;
                     }
                 }
+            }
+
+            if (!anyImpact)
+            {
+                break;
             }
         }
     }
@@ -361,9 +380,9 @@ namespace RT_PhysicsCore
                         continue;
                     }
 
-                    Vec3 vpA = bA ? (bA->pseudoVelocity + glm::cross(bA->pseudoAngularVelocity, p.rA)) : Vec3(0.0);
-                    Vec3 vpB = bB ? (bB->pseudoVelocity + glm::cross(bB->pseudoAngularVelocity, p.rB)) : Vec3(0.0);
-                    Real vpn = glm::dot(vpB - vpA, cc.normal);
+                    Vec3 vA = bA ? (bA->pseudoVelocity + glm::cross(bA->pseudoAngularVelocity, p.rA)) : Vec3(0.0);
+                    Vec3 vB = bB ? (bB->pseudoVelocity + glm::cross(bB->pseudoAngularVelocity, p.rB)) : Vec3(0.0);
+                    Real vpn = glm::dot(vB - vA, cc.normal);
 
                     Real Kn = invMassA + invMassB + AngularEffectiveMass(p.rA, cc.normal, invInertiaA) + AngularEffectiveMass(p.rB, cc.normal, invInertiaB);
                     if (Kn > kSolverEpsilon)
@@ -373,16 +392,16 @@ namespace RT_PhysicsCore
                         Real delta = newImpulse - p.pseudoNormalImpulse;
                         p.pseudoNormalImpulse = newImpulse;
 
-                        Vec3 push = delta * cc.normal;
+                        Vec3 impulse = delta * cc.normal;
                         if (bA && bA->invMass > 0.0)
                         {
-                            bA->pseudoVelocity -= bA->invMass * push;
-                            bA->pseudoAngularVelocity -= invInertiaA * glm::cross(p.rA, push);
+                            bA->pseudoVelocity -= bA->invMass * impulse;
+                            bA->pseudoAngularVelocity -= invInertiaA * glm::cross(p.rA, impulse);
                         }
                         if (bB && bB->invMass > 0.0)
                         {
-                            bB->pseudoVelocity += bB->invMass * push;
-                            bB->pseudoAngularVelocity += invInertiaB * glm::cross(p.rB, push);
+                            bB->pseudoVelocity += bB->invMass * impulse;
+                            bB->pseudoAngularVelocity += invInertiaB * glm::cross(p.rB, impulse);
                         }
                     }
                 }

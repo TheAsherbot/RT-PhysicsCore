@@ -56,19 +56,8 @@ namespace RT_PhysicsCore
             // Evaluate high-precision GJK distance at time t
             GjkResult gjk = GJK::ComputeDistance(currentCoreA, currentCoreB);
 
-            if (gjk.distance <= targetGap)
-            {
-                // Impact detected within security skin
-                result.hasHit = true;
-                result.timeOfImpact = t;
-                result.normal = gjk.normal;
-                result.contactPoint = 0.5 * (gjk.closestPointA + gjk.closestPointB);
-                return result;
-            }
-
             // Relative linear velocity displacement vector: delta_disp = linDispB - linDispA
             // Closing velocity component along collision normal (normal directed A -> B):
-            // Closing speed bound = max(0, -dot(delta_disp, n))
             Vec3 relDisp = linDispB - linDispA;
             Real linearClosingBound = std::max(0.0, -glm::dot(relDisp, gjk.normal));
 
@@ -84,8 +73,33 @@ namespace RT_PhysicsCore
                 return result;
             }
 
+            if (gjk.distance <= targetGap)
+            {
+                // If distance is already <= targetGap at the start of the substep (t < kCastEpsilon),
+                // the bodies started in contact. Discrete collision resolution handles resting/touching contacts.
+                // Reporting a CCD hit at t = 0.0 would clamp motion fraction to 0, permanently freezing bodies.
+                if (t < kCastEpsilon)
+                {
+                    result.hasHit = false;
+                    result.timeOfImpact = 1.0;
+                    return result;
+                }
+
+                // Dynamic impact detected during advancement within security skin
+                result.hasHit = true;
+                result.timeOfImpact = t;
+                result.normal = gjk.normal;
+                result.contactPoint = 0.5 * (gjk.closestPointA + gjk.closestPointB);
+                return result;
+            }
+
             // Conservative advancement time step: delta_t = (d - targetGap) / closingBound
             Real deltaT = (gjk.distance - targetGap) / totalClosingBound;
+            if (deltaT < kCastEpsilon)
+            {
+                break;
+            }
+
             t += deltaT;
 
             if (t >= 1.0)
@@ -97,9 +111,9 @@ namespace RT_PhysicsCore
             }
         }
 
-        // Reached iteration cap; safely clamp to the farthest verified clear time fraction
+        // Reached iteration cap without impact; trajectory is clear up to 1.0
         result.hasHit = false;
-        result.timeOfImpact = std::min(1.0, t);
+        result.timeOfImpact = 1.0;
         return result;
     }
 }

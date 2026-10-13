@@ -5,6 +5,9 @@
 
 #include "RT-PhysicsCore/physics/systems/ResolutionSystem.h"
 #include "RT-PhysicsCore/physics/systems/CollisionSystem.h"
+#include "RT-PhysicsCore/core/ecs/core/Scene.h"
+#include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
+#include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
 
 namespace RT_PhysicsCore
 {
@@ -66,8 +69,43 @@ namespace RT_PhysicsCore
             std::vector<ContactConstraint> constraints;
             backend.PrepareConstraints(island, constraints, h);
 
-            backend.SolveVelocity(constraints, h);
+            // Bind component pointers, center-of-mass lever arms, and pre-solve relative velocities
+            for (auto& cc : constraints)
+            {
+                Contact* orig = cc.originalContact;
+                if (!orig)
+                {
+                    continue;
+                }
+
+                cc.bodyA = scene.GetComponent<RigidBodyComponent>(orig->a);
+                cc.bodyB = scene.GetComponent<RigidBodyComponent>(orig->b);
+                auto* tA = scene.GetComponent<TransformComponent>(orig->a);
+                auto* tB = scene.GetComponent<TransformComponent>(orig->b);
+
+                for (size_t i = 0; i < cc.points.size(); ++i)
+                {
+                    auto& p = cc.points[i];
+                    const auto& cp = orig->points[i];
+
+                    // Transform contact points to lever arms from each body's center of mass
+                    p.rA = tA ? (cp.position - tA->position) : cp.localAnchorA;
+                    p.rB = tB ? (cp.position - tB->position) : cp.localAnchorB;
+
+                    // Capture pre-solve approach speed for restitution bounce calculation
+                    Vec3 vA = cc.bodyA ? (cc.bodyA->velocity + glm::cross(cc.bodyA->angularVelocity, p.rA)) : Vec3(0.0);
+                    Vec3 vB = cc.bodyB ? (cc.bodyB->velocity + glm::cross(cc.bodyB->angularVelocity, p.rB)) : Vec3(0.0);
+                    p.preSolveRelVelN = glm::dot(vB - vA, cc.normal);
+                }
+            }
+
+            // 1. Solve dynamic restitution and shockwave propagation first
             backend.SolveRestitution(constraints, h);
+
+            // 2. Solve unilateral non-penetration and Coulomb friction
+            backend.SolveVelocity(constraints, h);
+
+            // 3. Solve geometric penetration on split-impulse pseudo-velocities
             backend.SolvePenetration(constraints, h);
         }
 

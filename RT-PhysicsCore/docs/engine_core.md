@@ -51,8 +51,8 @@ engine loop, rendering, input, debug drawing. Physics lives in a separate
 
 ## Transform Hierarchy
 
-- `TransformComponent` = local position/rotation(quat)/scale.
-  `WorldTransformComponent` = computed world-space equivalent.
+- `TransformComponent` = local position (`Vec3`), rotation (`Quat`), and scale (`Vec3`) in double precision.
+- `WorldTransformComponent` = computed world-space equivalent.
 - `TransformPropagationSystem` formula:
   ```
   worldPos   = parentWorldPos + parentWorldRot * (parentWorldScale * localPos)

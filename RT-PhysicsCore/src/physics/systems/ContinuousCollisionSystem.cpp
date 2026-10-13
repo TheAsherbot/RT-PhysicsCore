@@ -116,7 +116,7 @@ namespace RT_PhysicsCore
                     target.core, target.linDisp, target.body->angularVelocity, target.boundRadius,
                     h, targetSkinGap, maxCastIterations);
 
-                if (castRes.hasHit && castRes.timeOfImpact < fast.body->motionFraction)
+                if (castRes.hasHit && castRes.timeOfImpact > 1e-6 && castRes.timeOfImpact < fast.body->motionFraction)
                 {
                     // Clamp body motion fraction (time stealing)
                     fast.body->motionFraction = castRes.timeOfImpact;

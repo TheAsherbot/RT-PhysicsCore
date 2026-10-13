@@ -321,8 +321,8 @@ namespace RT_PhysicsCore
             newVertex.pB = Support::ComputeSupport(coreB, -dirNorm);
             newVertex.v = newVertex.pA - newVertex.pB;
 
-            // Convergence test: if new point does not progress further than current closest point
-            Real progress = glm::dot(closestPoint - newVertex.v, dirNorm);
+            // Convergence test: new vertex must project further in search direction than closest point
+            Real progress = glm::dot(newVertex.v - closestPoint, dirNorm);
             if (progress <= kGjkEpsilon || distSq >= prevDistSq)
             {
                 break;
@@ -348,14 +348,15 @@ namespace RT_PhysicsCore
         Real coreDistance = glm::length(closestPoint);
         Real netDistance = coreDistance - (coreA.coreRadius + coreB.coreRadius);
 
-        Vec3 normal = (coreDistance > kGjkEpsilon) ? (closestPoint / coreDistance) : Vec3(0.0, 1.0, 0.0);
+        // ClosestPoint on (A - B) points from B to A; negate so normal points from A to B
+        Vec3 normal = (coreDistance > kGjkEpsilon) ? (-closestPoint / coreDistance) : Vec3(0.0, 1.0, 0.0);
 
         // Account for spherical expansion radii on witness points
         result.areDisjoint = (netDistance > 0.0);
         result.distance = netDistance;
         result.normal = normal;
-        result.closestPointA = closestA - normal * coreA.coreRadius;
-        result.closestPointB = closestB + normal * coreB.coreRadius;
+        result.closestPointA = closestA + normal * coreA.coreRadius;
+        result.closestPointB = closestB - normal * coreB.coreRadius;
 
         return result;
     }
