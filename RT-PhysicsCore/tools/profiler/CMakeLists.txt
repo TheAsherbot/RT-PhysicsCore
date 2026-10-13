@@ -1,6 +1,6 @@
 # RT-PhysicsCore\tools\profiler\CMakeLists.txt
 
-add_executable(RT-ProfilerViewer ProfilerApplicaiton.cpp)
+add_executable(RT-ProfilerViewer ProfilerApplication.cpp)
 
 target_link_libraries(RT-ProfilerViewer PRIVATE
     glad
