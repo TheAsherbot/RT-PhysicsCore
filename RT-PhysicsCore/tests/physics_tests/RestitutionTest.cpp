@@ -46,9 +46,20 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     RT_LOG_INFO("Restitution Test harness starting.");
+
+    bool enableGui = false;
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (arg == "--gui" || arg == "-g" || arg == "--visual" || arg == "-v")
+        {
+            enableGui = true;
+            break;
+        }
+    }
 
     int passCount = 0;
     int totalCount = 0;
@@ -286,6 +297,12 @@ int main()
     }
 
     RT_LOG_INFO(passCount << "/" << totalCount << " automated checks passed.");
+
+    if (!enableGui)
+    {
+        RT_LOG_INFO("Headless execution complete (pass --gui to open interactive visualizer).");
+        return (passCount == totalCount) ? 0 : 1;
+    }
 
     // ── Phase 2: Interactive multi-scenario visualization ──
 

@@ -449,9 +449,20 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     RT_LOG_INFO("Integration Test harness starting.");
+
+    bool enableGui = false;
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (arg == "--gui" || arg == "-g" || arg == "--visual" || arg == "-v")
+        {
+            enableGui = true;
+            break;
+        }
+    }
 
     // ── Phase 1: Automated assertions ──
 
@@ -475,6 +486,12 @@ int main()
         RT_LOG_INFO((r.passed ? "[PASS] " : "[FAIL] ") << r.name << " - " << r.detail);
     }
     RT_LOG_INFO(passCount << "/" << results.size() << " automated checks passed.");
+
+    if (!enableGui)
+    {
+        RT_LOG_INFO("Headless execution complete (pass --gui to open interactive visualizer).");
+        return (passCount == static_cast<int>(results.size())) ? 0 : 1;
+    }
 
     // ── Phase 2: Visual — trajectories + live angular demonstrations ──
 

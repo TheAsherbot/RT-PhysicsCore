@@ -2,27 +2,36 @@
 
 add_executable(PhysicsTests_Collision CollisionTest.cpp)
 target_link_libraries(PhysicsTests_Collision PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_Collision COMMAND PhysicsTests_Collision)
 
 add_executable(PhysicsTests_SolverComparison SolverComparisonTest.cpp)
 target_link_libraries(PhysicsTests_SolverComparison PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_SolverComparison COMMAND PhysicsTests_SolverComparison)
 
 add_executable(PhysicsTests_Integration IntegrationTest.cpp)
 target_link_libraries(PhysicsTests_Integration PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_Integration COMMAND PhysicsTests_Integration)
 
 add_executable(PhysicsTests_AABB AABBBroadphaseTest.cpp)
 target_link_libraries(PhysicsTests_AABB PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_AABB COMMAND PhysicsTests_AABB)
 
 add_executable(PhysicsTests_MassProperties MassPropertiesTest.cpp)
 target_link_libraries(PhysicsTests_MassProperties PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_MassProperties COMMAND PhysicsTests_MassProperties)
 
 add_executable(PhysicsTests_SolverStability SolverStabilityTest.cpp)
 target_link_libraries(PhysicsTests_SolverStability PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_SolverStability COMMAND PhysicsTests_SolverStability)
 
 add_executable(PhysicsTests_Restitution RestitutionTest.cpp)
 target_link_libraries(PhysicsTests_Restitution PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_Restitution COMMAND PhysicsTests_Restitution)
 
 add_executable(PhysicsTests_Friction FrictionTest.cpp)
 target_link_libraries(PhysicsTests_Friction PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_Friction COMMAND PhysicsTests_Friction)
 
 add_executable(PhysicsTests_PositionCorrection PositionCorrectionTest.cpp)
 target_link_libraries(PhysicsTests_PositionCorrection PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_PositionCorrection COMMAND PhysicsTests_PositionCorrection)

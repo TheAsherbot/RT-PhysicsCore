@@ -115,7 +115,7 @@ namespace
         return ke;
     }
 
-    
+
     float GetMaxPenetration(CollisionSystem* colSys)
     {
         float maxPen = 0.0f;
@@ -163,9 +163,20 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     RT_LOG_INFO("Solver Stability Test harness starting.");
+
+    bool enableGui = false;
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (arg == "--gui" || arg == "-g" || arg == "--visual" || arg == "-v")
+        {
+            enableGui = true;
+            break;
+        }
+    }
 
     // ── Phase 1: Automated assertions ──
 
@@ -204,6 +215,12 @@ int main()
     }
 
     RT_LOG_INFO(passCount << "/" << totalCount << " automated checks passed.");
+
+    if (!enableGui)
+    {
+        RT_LOG_INFO("Headless execution complete (pass --gui to open interactive visualizer).");
+        return (passCount == totalCount) ? 0 : 1;
+    }
 
     // ── Phase 2: Interactive visualization ──
 

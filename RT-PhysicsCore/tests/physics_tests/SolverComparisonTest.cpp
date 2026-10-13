@@ -324,9 +324,20 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     RT_LOG_INFO("Solver Comparison Test harness starting.");
+
+    bool enableGui = false;
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (arg == "--gui" || arg == "-g" || arg == "--visual" || arg == "-v")
+        {
+            enableGui = true;
+            break;
+        }
+    }
 
     auto tests = BuildTests();
     constexpr double fixedDt = 1.0 / 60.0;
@@ -369,6 +380,12 @@ int main()
         RT_LOG_INFO(oss.str());
     }
     RT_LOG_INFO(passCount << "/" << tests.size() << " automated checks passed.");
+
+    if (!enableGui)
+    {
+        RT_LOG_INFO("Headless execution complete (pass --gui to open interactive visualizer).");
+        return (passCount == static_cast<int>(tests.size())) ? 0 : 1;
+    }
 
     // ── Phase 2: Interactive split visualization ──
 

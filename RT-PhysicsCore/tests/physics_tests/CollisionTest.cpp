@@ -176,15 +176,19 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     RT_LOG_INFO("Collision narrow-phase test harness starting.");
 
-    RT_PhysicsCore::Renderer renderer(1280, 720, "RT-PhysicsCore Collision Tests");
-    if (!renderer.IsValid())
+    bool enableGui = false;
+    for (int i = 1; i < argc; ++i)
     {
-        RT_LOG_FATAL("Renderer failed to initialize - see the errors above. Exiting.");
-        return 1;
+        std::string arg = argv[i];
+        if (arg == "--gui" || arg == "-g" || arg == "--visual" || arg == "-v")
+        {
+            enableGui = true;
+            break;
+        }
     }
 
     std::vector<TestCase> tests = BuildTests();
@@ -209,6 +213,21 @@ int main()
             << ")");
     }
     RT_LOG_INFO(passCount << "/" << tests.size() << " automated checks passed.");
+
+    if (!enableGui)
+    {
+        RT_LOG_INFO("Headless execution complete (pass --gui to open interactive visualizer).");
+        return (passCount == static_cast<int>(tests.size())) ? 0 : 1;
+    }
+
+    // ── Phase 2: Interactive visualization ──
+
+    RT_PhysicsCore::Renderer renderer(1280, 720, "RT-PhysicsCore Collision Tests");
+    if (!renderer.IsValid())
+    {
+        RT_LOG_FATAL("Renderer failed to initialize - see the errors above. Exiting.");
+        return 1;
+    }
 
     size_t current = 0;
     double elapsed = 0.0;
@@ -253,5 +272,5 @@ int main()
         renderer.EndFrame();
     }
 
-    return 0;
+    return (passCount == static_cast<int>(tests.size())) ? 0 : 1;
 }
