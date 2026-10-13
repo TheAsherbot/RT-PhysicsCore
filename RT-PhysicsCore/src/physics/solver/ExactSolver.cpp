@@ -24,7 +24,7 @@ namespace RT_PhysicsCore
 
     void ExactSolver::SetMaxOuterFrictionPasses(int passes)
     {
-        maxOuterFrictionPasses = passes;
+        maxOuterFrictionPasses = std::max(1, passes);
     }
 
     void ExactSolver::SetFrictionTolerance(Real tol)
@@ -130,7 +130,8 @@ namespace RT_PhysicsCore
             z[i] = pointRefs[i].constraint->points[pointRefs[i].pointIndex].normalImpulse;
         }
 
-        bool converged = false;
+        Real prevMaxDelta = 1e30;
+
         for (int pass = 0; pass < maxOuterFrictionPasses; ++pass)
         {
             // Reset bodies to snapshot
@@ -234,7 +235,7 @@ namespace RT_PhysicsCore
                 entry.first->angularVelocity = entry.first->invInertiaWorld * entry.first->angularMomentum;
             }
 
-            // Solve friction disc constraints against the fixed normal impulses z[i]
+            // Solve friction disc constraints with exact tangential effective mass
             for (int i = 0; i < n; ++i)
             {
                 const PointRef& p = pointRefs[i];
@@ -248,12 +249,25 @@ namespace RT_PhysicsCore
                 Real vt1 = glm::dot(relVel, cc->tangent1);
                 Real vt2 = glm::dot(relVel, cc->tangent2);
 
-                Real maxFriction = cp.kineticFriction * z[i];
                 Real mag = std::sqrt(vt1 * vt1 + vt2 * vt2);
                 if (mag > 1e-12)
                 {
-                    cp.tangentImpulse1 = -std::min(maxFriction, mag) * (vt1 / mag);
-                    cp.tangentImpulse2 = -std::min(maxFriction, mag) * (vt2 / mag);
+                    Real invMassA = cc->bodyA ? cc->bodyA->invMass : 0.0;
+                    Real invMassB = cc->bodyB ? cc->bodyB->invMass : 0.0;
+                    Mat3 invInertiaA = cc->bodyA ? cc->bodyA->invInertiaWorld : Mat3(0.0);
+                    Mat3 invInertiaB = cc->bodyB ? cc->bodyB->invInertiaWorld : Mat3(0.0);
+
+                    Vec3 tDir = (vt1 / mag) * cc->tangent1 + (vt2 / mag) * cc->tangent2;
+                    Real Kt = invMassA + invMassB +
+                        glm::dot(tDir, glm::cross(invInertiaA * glm::cross(cp.rA, tDir), cp.rA)) +
+                        glm::dot(tDir, glm::cross(invInertiaB * glm::cross(cp.rB, tDir), cp.rB));
+
+                    Real maxFriction = cp.kineticFriction * z[i];
+                    Real desiredImpulse = (Kt > 1e-12) ? (mag / Kt) : mag;
+                    Real appliedImpulse = std::min(maxFriction, desiredImpulse);
+
+                    cp.tangentImpulse1 = -appliedImpulse * (vt1 / mag);
+                    cp.tangentImpulse2 = -appliedImpulse * (vt2 / mag);
                 }
                 else
                 {
@@ -264,9 +278,16 @@ namespace RT_PhysicsCore
 
             if (maxDelta < frictionTolerance)
             {
-                converged = true;
                 break;
             }
+
+            // Divergence safeguard: if delta is expanding, Picard iteration is unstable
+            if (pass > 0 && maxDelta > prevMaxDelta)
+            {
+                break;
+            }
+
+            prevMaxDelta = maxDelta;
         }
 
         // Apply final converged normal and friction impulses from initial snapshot

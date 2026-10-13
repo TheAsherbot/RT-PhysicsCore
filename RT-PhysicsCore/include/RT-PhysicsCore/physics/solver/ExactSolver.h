@@ -93,7 +93,7 @@ namespace RT_PhysicsCore
 
         IterativeSolver fallbackSolver;
         int exactMaxPoints{ 96 };
-        int maxOuterFrictionPasses{ 30 };
-        Real frictionTolerance{ 1e-9 };
+        int maxOuterFrictionPasses{ 2 };
+        Real frictionTolerance{ 1e-4 };
     };
 }

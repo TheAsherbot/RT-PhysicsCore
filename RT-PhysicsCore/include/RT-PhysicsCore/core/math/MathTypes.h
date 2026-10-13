@@ -493,12 +493,64 @@ namespace RT_PhysicsCore
     };
 
     /**
+     * @brief Explicitly converts a high-precision scalar Real to single-precision float.
+     *
+     * Demands an explicit call rather than implicit casting so callers intentionally
+     * acknowledge precision loss when interfacing with single-precision systems (e.g. shaders, meshes).
+     *
+     * @param value High-precision scalar value.
+     * @return Single-precision floating point representation.
+     */
+    float ToFloat(Real value);
+    /**
+     * @brief Explicitly converts a high-precision scalar Real to single-precision float.
+     * Alternative name matching the ToFloatVec3 / ToFloatQuat naming convention.
+     * @param value High-precision scalar value.
+     * @return Single-precision floating point representation.
+     */
+    float ToFloatReal(Real value);
+    /**
+     * @brief Explicitly converts a high-precision 2D vector to single precision.
+     * @param v High-precision 2D vector.
+     * @return Single-precision 2D vector.
+     */
+    glm::vec2 ToFloat(const Vec2& v);
+    /**
+     * @brief Explicitly converts a high-precision 3D vector to single precision.
+     * @param v High-precision 3D vector.
+     * @return Single-precision 3D vector.
+     */
+    glm::vec3 ToFloat(const Vec3& v);
+    /**
+     * @brief Explicitly converts a high-precision 4D vector to single precision.
+     * @param v High-precision 4D vector.
+     * @return Single-precision 4D vector.
+     */
+    glm::vec4 ToFloat(const Vec4& v);
+    /**
+     * @brief Explicitly converts a high-precision 3x3 matrix to single precision.
+     * @param m High-precision 3x3 matrix.
+     * @return Single-precision 3x3 matrix.
+     */
+    glm::mat3 ToFloat(const Mat3& m);
+    /**
+     * @brief Explicitly converts a high-precision 4x4 matrix to single precision.
+     * @param m High-precision 4x4 matrix.
+     * @return Single-precision 4x4 matrix.
+     */
+    glm::mat4 ToFloat(const Mat4& m);
+    /**
+     * @brief Explicitly converts a high-precision quaternion to single precision.
+     * @param q High-precision quaternion.
+     * @return Single-precision quaternion.
+     */
+    glm::quat ToFloat(const Quat& q);
+    /**
      * @brief Converts a high-precision 3D vector to single precision for rendering pipelines.
      * @param v High-precision vector.
      * @return Single-precision 3D vector.
      */
     glm::vec3 ToFloatVec3(const Vec3& v);
-
     /**
      * @brief Converts a high-precision quaternion to single precision for rendering pipelines.
      * @param q High-precision quaternion.

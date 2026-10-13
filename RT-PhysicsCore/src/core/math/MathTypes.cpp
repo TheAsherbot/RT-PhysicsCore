@@ -344,6 +344,46 @@ namespace RT_PhysicsCore
         return !(*this == other);
     }
 
+    float ToFloat(Real value)
+    {
+        return static_cast<float>(value);
+    }
+
+    float ToFloatReal(Real value)
+    {
+        return static_cast<float>(value);
+    }
+
+    glm::vec2 ToFloat(const Vec2& v)
+    {
+        return glm::vec2(v);
+    }
+
+    glm::vec3 ToFloat(const Vec3& v)
+    {
+        return static_cast<glm::vec3>(v);
+    }
+
+    glm::vec4 ToFloat(const Vec4& v)
+    {
+        return glm::vec4(v);
+    }
+
+    glm::mat3 ToFloat(const Mat3& m)
+    {
+        return glm::mat3(m);
+    }
+
+    glm::mat4 ToFloat(const Mat4& m)
+    {
+        return glm::mat4(m);
+    }
+
+    glm::quat ToFloat(const Quat& q)
+    {
+        return static_cast<glm::quat>(q);
+    }
+
     glm::vec3 ToFloatVec3(const Vec3& v)
     {
         return static_cast<glm::vec3>(v);
