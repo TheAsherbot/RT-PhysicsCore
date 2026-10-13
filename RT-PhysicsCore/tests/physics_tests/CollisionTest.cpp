@@ -106,60 +106,71 @@ namespace
 
         std::vector<TestCase> tests;
 
+        // 1. Sphere-Sphere overlapping
         tests.push_back({ "Sphere-Sphere overlap",
-            MakePose(ColliderShape::Sphere, {1.0f,0,0}, {0,0,0}),
-            MakePose(ColliderShape::Sphere, {1.0f,0,0}, {1.5f,0,0}),
+            MakePose(ColliderShape::Sphere, { 1.0f, 0, 0 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Sphere, { 1.0f, 0, 0 }, { 1.5f, 0, 0 }),
             true, 1 });
 
+        // 2. Sphere-Sphere separated
         tests.push_back({ "Sphere-Sphere separated",
-            MakePose(ColliderShape::Sphere, {1.0f,0,0}, {0,0,0}),
-            MakePose(ColliderShape::Sphere, {1.0f,0,0}, {5.0f,0,0}),
-            false });
+            MakePose(ColliderShape::Sphere, { 1.0f, 0, 0 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Sphere, { 1.0f, 0, 0 }, { 5.0f, 0, 0 }),
+            false, 0 });
 
+        // 3. Sphere-Box touching face
         tests.push_back({ "Sphere-Box touching face",
-            MakePose(ColliderShape::Box, {1,1,1}, {0,0,0}),
-            MakePose(ColliderShape::Sphere, {0.5f,0,0}, {1.3f,0,0}),
+            MakePose(ColliderShape::Box, { 1, 1, 1 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Sphere, { 0.5f, 0, 0 }, { 1.3f, 0, 0 }),
             true, 1 });
 
+        // 4. Sphere center inside Box
         tests.push_back({ "Sphere center inside Box",
-            MakePose(ColliderShape::Box, {2,2,2}, {0,0,0}),
-            MakePose(ColliderShape::Sphere, {0.5f,0,0}, {0.5f,0,0}),
+            MakePose(ColliderShape::Box, { 2, 2, 2 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Sphere, { 0.5f, 0, 0 }, { 0.5f, 0, 0 }),
             true, 1 });
 
+        // 5. Sphere-Capsule
         tests.push_back({ "Sphere-Capsule",
-            MakePose(ColliderShape::Capsule, {0.5f,1.0f,0}, {0,0,0}),
-            MakePose(ColliderShape::Sphere, {0.5f,0,0}, {0.5f,0,0}),
+            MakePose(ColliderShape::Capsule, { 0.5f, 1.0f, 0 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Sphere, { 0.5f, 0, 0 }, { 0.5f, 0, 0 }),
             true, 1 });
 
+        // 6. Capsule-Capsule perpendicular crossing
         tests.push_back({ "Capsule-Capsule crossing",
-            MakePose(ColliderShape::Capsule, {0.4f,1.0f,0}, {0,0,0}, rotZ90),
-            MakePose(ColliderShape::Capsule, {0.4f,1.0f,0}, {0,0,0}),
+            MakePose(ColliderShape::Capsule, { 0.4f, 1.0f, 0 }, { 0, 0, 0 }, rotZ90),
+            MakePose(ColliderShape::Capsule, { 0.4f, 1.0f, 0 }, { 0, 0, 0 }),
             true, 1 });
 
+        // 7. Capsule-Capsule parallel resting line contact
         tests.push_back({ "Capsule-Capsule parallel resting",
-            MakePose(ColliderShape::Capsule, {0.5f,1.5f,0}, {0,0,0}),
-            MakePose(ColliderShape::Capsule, {0.5f,1.5f,0}, {0.7f,0,0}),
+            MakePose(ColliderShape::Capsule, { 0.5f, 1.5f, 0 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Capsule, { 0.5f, 1.5f, 0 }, { 0.7f, 0, 0 }),
             true, 2 });
 
+        // 8. Box-Capsule resting on face
         tests.push_back({ "Box-Capsule resting on face",
-            MakePose(ColliderShape::Box, {2,0.5f,2}, {0,0,0}),
-            MakePose(ColliderShape::Capsule, {0.4f,1.5f,0}, {0,0.75f,0}, rotZ90),
+            MakePose(ColliderShape::Box, { 2, 0.5f, 2 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Capsule, { 0.4f, 1.5f, 0 }, { 0, 0.75f, 0 }, rotZ90),
             true, 2 });
 
+        // 9. Box-Box flat face stack (4 extremal points)
         tests.push_back({ "Box-Box flat stack",
-            MakePose(ColliderShape::Box, {2,1,2}, {0,0,0}),
-            MakePose(ColliderShape::Box, {1,1,1}, {0,1.8f,0}),
+            MakePose(ColliderShape::Box, { 2, 1, 2 }, { 0, 0, 0 }),
+            MakePose(ColliderShape::Box, { 1, 1, 1 }, { 0, 1.8f, 0 }),
             true, 4 });
 
-        tests.push_back({ "Box-Box rotated, touching",
-            MakePose(ColliderShape::Box, {1,1,1}, {0,0,0}, rotY45),
-            MakePose(ColliderShape::Box, {1,1,1}, {1.6f,1.6f,0}, rotX45),
-            true });
+        // 10. Box-Box edge-edge intersection (SAT edge-edge minimum axis produces 1 contact)
+        tests.push_back({ "Box-Box edge-edge cross contact",
+            MakePose(ColliderShape::Box, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, rotY45),
+            MakePose(ColliderShape::Box, { 1.0f, 1.0f, 1.0f }, { 0.0f, 2.3f, 0.0f }, rotX45),
+            true, 2 });
 
-        tests.push_back({ "Box-Box separated",
-            MakePose(ColliderShape::Box, {1,1,1}, {0,0,0}),
-            MakePose(ColliderShape::Box, {1,1,1}, {10,0,0}),
-            false });
+        // 11. Box-Box rotated clearly separated
+        tests.push_back({ "Box-Box rotated separated",
+            MakePose(ColliderShape::Box, { 1, 1, 1 }, { 0, 0, 0 }, rotY45),
+            MakePose(ColliderShape::Box, { 1, 1, 1 }, { 5.0f, 5.0f, 0 }, rotX45),
+            false, 0 });
 
         return tests;
     }

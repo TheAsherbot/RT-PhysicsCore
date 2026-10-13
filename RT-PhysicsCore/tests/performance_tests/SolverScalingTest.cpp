@@ -1,6 +1,6 @@
 /**
  * @file SolverScalingTest.cpp
- * @brief Measures ResolutionSystem performance scaling (SI vs LCP).
+ * @brief Measures ResolutionSystem performance scaling (SI vs LCP) on active contact constraints.
  */
 
 #include <chrono>
@@ -24,12 +24,12 @@ namespace
     using namespace RT_PhysicsCore;
 
     /**
-     * @brief Measures solver execution time for a given object count and solver mode.
-     * @param objectCount Number of stacked objects to simulate.
-     * @param mode The solver resolution mode (e.g. SequentialImpulses, Exact).
-     * @param modeName Descriptive display name for the solver mode.
+     * @brief Measures solver performance over an active 30-frame dynamic settling window.
+     * @param objectCount Number of stacked boxes.
+     * @param mode Solver backend formulation.
+     * @param modeName Descriptive label.
      */
-    void MeasureSolver(int objectCount, ResolutionSystem::SolverMode mode, const std::string& modeName)
+    void MeasureSolverDynamically(int objectCount, ResolutionSystem::SolverMode mode, const std::string& modeName)
     {
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
@@ -37,7 +37,7 @@ namespace
         PhysicsPipelineSystem* pipelinePtr = pipeline.get();
         scene.AddSystem(std::move(pipeline));
 
-        // Ground
+        // Ground slab
         Entity g = scene.CreateEntity();
         TransformComponent gtc;
         gtc.position = { 0.0f, -0.5f, 0.0f };
@@ -48,12 +48,12 @@ namespace
         gcc.size = { 50.0f, 0.5f, 50.0f };
         scene.AddComponent(g, gcc);
 
-        // Pile
+        // Axially aligned stack of boxes
         for (int i = 0; i < objectCount; ++i)
         {
             Entity e = scene.CreateEntity();
             TransformComponent tc;
-            tc.position = { 0.0f, 1.0f + i * 1.2f, 0.0f };
+            tc.position = { 0.0f, 0.5f + static_cast<float>(i) * 1.0f, 0.0f };
             scene.AddComponent(e, tc);
             scene.AddComponent(e, MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, { 0.5f, 0.5f, 0.5f })));
             ColliderComponent cc;
@@ -62,35 +62,45 @@ namespace
             scene.AddComponent(e, cc);
         }
 
-        // Settle the pile
-        scene.SetFixedDeltaTime(1.0 / 60.0);
-        for (int i = 0; i < 180; ++i)
+        constexpr double fixedDt = 1.0 / 60.0;
+        scene.SetFixedDeltaTime(fixedDt);
+
+        // Pre-step 30 frames to initiate multi-body contacts
+        for (int i = 0; i < 30; ++i)
         {
             scene.FixedUpdateSystems();
         }
 
-        int contacts = static_cast<int>(pipelinePtr->GetCollisionSystem().GetContacts().size());
-
-        // Measure resolution time
+        // Measure resolution time over the next 30 active physical steps
         constexpr int samples = 30;
-        double totalMs = 0.0;
+        double totalResolutionMs = 0.0;
+        size_t contactCountSum = 0;
 
         for (int i = 0; i < samples; ++i)
         {
+            pipelinePtr->GetPhysicsSystem().IntegrateVelocities(fixedDt / 4.0);
+            pipelinePtr->GetCollisionSystem().Detect(fixedDt / 4.0, 0.002);
+
+            contactCountSum += pipelinePtr->GetCollisionSystem().GetContacts().size();
+
             auto start = std::chrono::high_resolution_clock::now();
-            pipelinePtr->GetResolutionSystem().FixedUpdate(1.0 / 60.0);
+            pipelinePtr->GetResolutionSystem().Resolve(fixedDt / 4.0, pipelinePtr->GetCollisionSystem().GetContactCache());
             auto end = std::chrono::high_resolution_clock::now();
 
-            totalMs += std::chrono::duration<double, std::milli>(end - start).count();
+            totalResolutionMs += std::chrono::duration<double, std::milli>(end - start).count();
+
+            pipelinePtr->GetContinuousCollisionSystem().ExecuteCCD(fixedDt / 4.0, 0.002);
+            pipelinePtr->GetPhysicsSystem().IntegratePositions(fixedDt / 4.0);
         }
 
-        double avgMs = totalMs / samples;
+        double avgMs = totalResolutionMs / samples;
+        size_t avgContacts = contactCountSum / samples;
 
         std::ostringstream oss;
         oss << std::left << std::setw(4) << objectCount << " objs | "
-            << std::setw(4) << contacts << " contacts | "
+            << std::setw(4) << avgContacts << " contacts | "
             << std::setw(15) << modeName << " | "
-            << std::fixed << std::setprecision(3) << avgMs << " ms avg";
+            << std::fixed << std::setprecision(3) << avgMs << " ms avg/substep";
 
         RT_LOG_INFO(oss.str());
     }
@@ -98,16 +108,17 @@ namespace
 
 int main()
 {
-    RT_LOG_INFO("Solver Scaling Test (SI vs LCP)");
+    RT_LOG_INFO("Solver Scaling Test (SI vs LCP on Active Constraints)");
 
-    std::vector<int> counts = { 10, 25, 50 }; // Cap at 50 to avoid freezing on LCP
+    // Lemke exact formulation runs up to 96 points (24 boxes). 5, 10, and 20 span its valid domain.
+    std::vector<int> counts = { 5, 10, 20 };
 
     for (int count : counts)
     {
-        MeasureSolver(count, ResolutionSystem::SolverMode::SequentialImpulses, "SI (8 iter)");
-        MeasureSolver(count, ResolutionSystem::SolverMode::Exact, "LCP (Lemke)");
+        MeasureSolverDynamically(count, ResolutionSystem::SolverMode::SequentialImpulses, "SI (PGS)");
+        MeasureSolverDynamically(count, ResolutionSystem::SolverMode::Exact, "LCP (Lemke)");
     }
 
-    RT_LOG_INFO("Solver scaling checks completed.");
+    RT_LOG_INFO("Solver scaling benchmark completed.");
     return 0;
 }

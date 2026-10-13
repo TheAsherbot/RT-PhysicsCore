@@ -1,11 +1,13 @@
 /**
  * @file BroadphaseScalingTest.cpp
- * @brief Measures CollisionSystem broadphase scaling performance.
+ * @brief Measures CollisionSystem broadphase scaling under sparse and dense clustered distributions.
  */
 
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <memory>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -16,71 +18,126 @@
 #include "RT-PhysicsCore/core/ecs/components/TransformComponent.h"
 #include "RT-PhysicsCore/physics/systems/PhysicsPipelineSystem.h"
 #include "RT-PhysicsCore/physics/components/ColliderComponent.h"
+#include "RT-PhysicsCore/physics/components/RigidBodyComponent.h"
+#include "RT-PhysicsCore/physics/MassProperties.h"
 
 namespace
 {
     using namespace RT_PhysicsCore;
 
+    enum class Distribution
+    {
+        SparseGrid,
+        DenseClusters
+    };
+
     /**
-     * @brief Measures broadphase collision detection time for a given object count tier.
-     * @param objectCount Number of non-overlapping boxes to simulate in a 3D grid.
+     * @brief Measures swept AABB broadphase performance across a specific object count and spatial layout.
+     * @param objectCount Number of bodies to populate.
+     * @param dist Layout distribution type.
      */
-    void RunTier(int objectCount)
+    void RunDistributionBenchmark(int objectCount, Distribution dist)
     {
         Scene scene;
         scene.AddSystem(std::make_unique<TransformPropagationSystem>(scene));
-        auto pipeline = std::make_unique<PhysicsPipelineSystem>(scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
+        auto pipeline = std::make_unique<PhysicsPipelineSystem>(
+            scene, ResolutionSystem::SolverMode::SequentialImpulses, 4);
         PhysicsPipelineSystem* pipelinePtr = pipeline.get();
         scene.AddSystem(std::move(pipeline));
 
-        // Create a 3D grid of objects spaced far apart so they don't overlap
-        int side = static_cast<int>(std::ceil(std::cbrt(objectCount)));
-        int created = 0;
+        std::mt19937 rng(42);
+        std::uniform_real_distribution<float> velDist(-2.0f, 2.0f);
 
-        for (int x = 0; x < side && created < objectCount; ++x)
+        if (dist == Distribution::SparseGrid)
         {
-            for (int y = 0; y < side && created < objectCount; ++y)
+            int side = static_cast<int>(std::ceil(std::cbrt(objectCount)));
+            int created = 0;
+            for (int x = 0; x < side && created < objectCount; ++x)
             {
-                for (int z = 0; z < side && created < objectCount; ++z)
+                for (int y = 0; y < side && created < objectCount; ++y)
                 {
-                    Entity e = scene.CreateEntity();
-                    TransformComponent tc;
-                    tc.position = { x * 10.0f, y * 10.0f, z * 10.0f };
-                    scene.AddComponent(e, tc);
+                    for (int z = 0; z < side && created < objectCount; ++z)
+                    {
+                        Entity e = scene.CreateEntity();
+                        TransformComponent tc;
+                        tc.position = { x * 8.0f, y * 8.0f, z * 8.0f };
+                        scene.AddComponent(e, tc);
 
-                    ColliderComponent cc;
-                    cc.shape = ColliderShape::Box;
-                    cc.size = { 1.0f, 1.0f, 1.0f };
-                    scene.AddComponent(e, cc);
+                        RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, { 0.5f, 0.5f, 0.5f }));
+                        rb.velocity = { velDist(rng), velDist(rng), velDist(rng) };
+                        scene.AddComponent(e, rb);
 
-                    ++created;
+                        ColliderComponent cc;
+                        cc.shape = ColliderShape::Box;
+                        cc.size = { 0.5f, 0.5f, 0.5f };
+                        scene.AddComponent(e, cc);
+
+                        ++created;
+                    }
                 }
             }
         }
+        else
+        {
+            // Clustered: 8 tight clusters with localized overlapping swept bounds
+            constexpr int kClusters = 8;
+            glm::vec3 clusterCenters[kClusters] = {
+                { -20.0f, -20.0f, -20.0f }, { 20.0f, -20.0f, -20.0f },
+                { -20.0f,  20.0f, -20.0f }, { 20.0f,  20.0f, -20.0f },
+                { -20.0f, -20.0f,  20.0f }, { 20.0f, -20.0f,  20.0f },
+                { -20.0f,  20.0f,  20.0f }, { 20.0f,  20.0f,  20.0f }
+            };
 
-        // Warm up
-        scene.SetFixedDeltaTime(1.0 / 60.0);
-        scene.FixedUpdateSystems();
+            std::uniform_real_distribution<float> clusterOffset(-2.5f, 2.5f);
 
-        // Measure
-        constexpr int samples = 50;
+            for (int i = 0; i < objectCount; ++i)
+            {
+                const glm::vec3& center = clusterCenters[i % kClusters];
+                Entity e = scene.CreateEntity();
+                TransformComponent tc;
+                tc.position = center + glm::vec3(clusterOffset(rng), clusterOffset(rng), clusterOffset(rng));
+                scene.AddComponent(e, tc);
+
+                RigidBodyComponent rb = MakeDynamicBody(1.0f, ComputeBoxInertia(1.0f, { 0.5f, 0.5f, 0.5f }));
+                rb.velocity = { velDist(rng), velDist(rng), velDist(rng) };
+                scene.AddComponent(e, rb);
+
+                ColliderComponent cc;
+                cc.shape = ColliderShape::Box;
+                cc.size = { 0.5f, 0.5f, 0.5f };
+                scene.AddComponent(e, cc);
+            }
+        }
+
+        // Warm up and evaluate contacts
+        constexpr double fixedDt = 1.0 / 60.0;
+        pipelinePtr->GetCollisionSystem().Detect(fixedDt, 0.002);
+
+        size_t initialOverlaps = pipelinePtr->GetCollisionSystem().GetContacts().size();
+
+        // Sample execution
+        constexpr int samples = 30;
         double totalMs = 0.0;
 
         for (int i = 0; i < samples; ++i)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            pipelinePtr->GetCollisionSystem().FixedUpdate(1.0 / 60.0);
+            pipelinePtr->GetCollisionSystem().Detect(fixedDt, 0.002);
             auto end = std::chrono::high_resolution_clock::now();
 
             totalMs += std::chrono::duration<double, std::milli>(end - start).count();
         }
 
         double avgMs = totalMs / samples;
-        int expectedPairs = (objectCount * (objectCount - 1)) / 2;
+        int totalPairs = (objectCount * (objectCount - 1)) / 2;
+
+        std::string distName = (dist == Distribution::SparseGrid) ? "Sparse" : "Dense-Clustered";
 
         std::ostringstream oss;
-        oss << std::setw(6) << objectCount << " objs | "
-            << std::setw(8) << expectedPairs << " pairs | "
+        oss << std::setw(15) << distName << " | "
+            << std::setw(5) << objectCount << " objs | "
+            << std::setw(8) << totalPairs << " pairs | "
+            << std::setw(4) << initialOverlaps << " overlaps | "
             << std::fixed << std::setprecision(3) << avgMs << " ms avg";
 
         RT_LOG_INFO(oss.str());
@@ -89,15 +146,22 @@ namespace
 
 int main()
 {
-    RT_LOG_INFO("Broadphase Scaling Test harness starting.");
-    RT_LOG_INFO("=== Broadphase Scaling ===");
+    RT_LOG_INFO("Broadphase Scaling Benchmark (Sparse vs Dense Distributions)");
 
-    std::vector<int> tiers = { 50, 100, 250, 500, 1000, 2000, 5000, 10000 };
+    std::vector<int> tiers = { 50, 100, 250, 500, 1000 };
+
+    RT_LOG_INFO("--- 1. Sparse Grid Distribution (Baseline Early-Out) ---");
     for (int count : tiers)
     {
-        RunTier(count);
+        RunDistributionBenchmark(count, Distribution::SparseGrid);
     }
 
-    RT_LOG_INFO("Broadphase checks completed.");
+    RT_LOG_INFO("--- 2. Dense Clustered Distribution (Active Overlap Workload) ---");
+    for (int count : tiers)
+    {
+        RunDistributionBenchmark(count, Distribution::DenseClusters);
+    }
+
+    RT_LOG_INFO("Broadphase benchmark completed successfully.");
     return 0;
 }

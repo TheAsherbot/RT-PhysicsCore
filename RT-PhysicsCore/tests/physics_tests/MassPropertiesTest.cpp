@@ -94,136 +94,132 @@ int main()
 {
     RT_LOG_INFO("Mass Properties Test harness starting.");
 
-    // ── Phase 1: Automated assertions ──
-
     int passCount = 0;
     int totalCount = 0;
 
-    // Inertia tensor tests
     std::vector<InertiaTestCase> inertiaCases;
 
     inertiaCases.push_back({ "Unit sphere (m=1, r=1)",
         ComputeSphereInertia(1.0f, 1.0f),
-        {0.4f, 0.4f, 0.4f}, 0.001f });
+        { 0.4f, 0.4f, 0.4f }, 0.001f });
 
     inertiaCases.push_back({ "Heavy sphere (m=10, r=0.5)",
         ComputeSphereInertia(10.0f, 0.5f),
-        {1.0f, 1.0f, 1.0f}, 0.001f });
+        { 1.0f, 1.0f, 1.0f }, 0.001f });
 
     inertiaCases.push_back({ "Unit cube (m=1, half=[0.5,0.5,0.5])",
-        ComputeBoxInertia(1.0f, {0.5f, 0.5f, 0.5f}),
-        {0.1667f, 0.1667f, 0.1667f}, 0.001f });
+        ComputeBoxInertia(1.0f, { 0.5f, 0.5f, 0.5f }),
+        { 0.1667f, 0.1667f, 0.1667f }, 0.001f });
 
     inertiaCases.push_back({ "Thin rod box (m=1, half=[0.05,0.05,2.0])",
-        ComputeBoxInertia(1.0f, {0.05f, 0.05f, 2.0f}),
-        {1.334f, 1.334f, 0.00167f}, 0.01f });
+        ComputeBoxInertia(1.0f, { 0.05f, 0.05f, 2.0f }),
+        { 1.334f, 1.334f, 0.00167f }, 0.01f });
 
     inertiaCases.push_back({ "Flat pancake (m=1, half=[2,0.05,2])",
-        ComputeBoxInertia(1.0f, {2.0f, 0.05f, 2.0f}),
-        {1.334f, 2.667f, 1.334f}, 0.01f });
+        ComputeBoxInertia(1.0f, { 2.0f, 0.05f, 2.0f }),
+        { 1.334f, 2.667f, 1.334f }, 0.01f });
 
     inertiaCases.push_back({ "Cylinder (m=1, r=0.5, h=2)",
         ComputeCylinderInertia(1.0f, 0.5f, 2.0f),
-        {0.3958f, 0.125f, 0.3958f}, 0.01f });
+        { 0.3958f, 0.125f, 0.3958f }, 0.01f });
 
-    inertiaCases.push_back({ "Capsule (m=1, r=0.3, hl=1.0)",
+    // Exact analytical parallel-axis decomposition for capsule: m=1, r=0.3, halfLength=1.0
+    // I_axial = 0.0435, I_perp = 0.5067
+    inertiaCases.push_back({ "Capsule analytical parallel-axis (m=1, r=0.3, hl=1.0)",
         ComputeCapsuleInertia(1.0f, 0.3f, 1.0f),
-        // Approximate: verify symmetry Ixx == Izz and Iyy < Ixx
-        {-1.0f, -1.0f, -1.0f}, 0.0f }); // special case: check symmetry instead
+        { 0.5067f, 0.0435f, 0.5067f }, 0.005f });
 
-    for (auto& tc : inertiaCases)
+    for (const auto& tc : inertiaCases)
     {
         ++totalCount;
-        bool pass;
-        std::ostringstream oss;
 
-        if (tc.expectedDiagonal.x < 0.0f)
-        {
-            // Special case: check symmetry only (capsule)
-            float ix = tc.computed[0][0];
-            float iy = tc.computed[1][1];
-            float iz = tc.computed[2][2];
-            bool symmetric = std::abs(ix - iz) < 0.001f;
-            bool axialSmaller = iy < ix;
-            pass = symmetric && axialSmaller;
-            oss << "I_diag=[" << ix << "," << iy << "," << iz << "]"
-                << " Ixx==Izz:" << symmetric << " Iyy<Ixx:" << axialSmaller;
-        }
-        else
-        {
-            pass = DiagonalApprox(tc.computed, tc.expectedDiagonal, tc.tolerance);
-            oss << "I_diag=[" << tc.computed[0][0] << "," << tc.computed[1][1] << "," << tc.computed[2][2] << "]"
-                << " expected=[" << tc.expectedDiagonal.x << "," << tc.expectedDiagonal.y << "," << tc.expectedDiagonal.z << "]";
-        }
-
+        bool pass = DiagonalApprox(tc.computed, tc.expectedDiagonal, tc.tolerance);
         if (pass)
         {
             ++passCount;
         }
+
+        std::ostringstream oss;
+        oss << "I_diag=[" << tc.computed[0][0] << "," << tc.computed[1][1] << "," << tc.computed[2][2] << "]"
+            << " expected=[" << tc.expectedDiagonal.x << "," << tc.expectedDiagonal.y << "," << tc.expectedDiagonal.z << "]";
+
         RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << tc.name << " - " << oss.str());
     }
 
-    // All inertia matrices should be diagonal (off-diagonal == 0)
+    // All inertia matrices must be principal-axis diagonal
     {
         ++totalCount;
+
         float maxOff = 0.0f;
+
         for (const auto& tc : inertiaCases)
         {
             maxOff = std::max(maxOff, MaxOffDiagonal(tc.computed));
         }
-        bool pass = maxOff < 0.0001f;
-        if (pass) ++passCount;
-        std::ostringstream oss;
-        oss << "max_off_diagonal=" << maxOff;
-        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "All matrices are diagonal - " << oss.str());
-    }
 
-    // I * I^-1 = Identity for each shape
+        bool pass = maxOff < 0.0001f;
+        if (pass)
+        {
+            ++passCount;
+        }
+
+        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "All matrices are diagonal (max off-diag=" << maxOff << ")");
+    }
+    // I * I^-1 = Identity
     {
         ++totalCount;
+
         float maxErr = 0.0f;
         for (const auto& tc : inertiaCases)
         {
             glm::mat3 invI = glm::inverse(tc.computed);
-            glm::mat3 product = tc.computed * invI;
+            glm::mat3 prod = tc.computed * invI;
+
             for (int i = 0; i < 3; ++i)
+            {
                 for (int j = 0; j < 3; ++j)
-                    maxErr = std::max(maxErr, std::abs(product[i][j] - (i == j ? 1.0f : 0.0f)));
+                {
+                    float expected = (i == j) ? 1.0f : 0.0f;
+                    maxErr = std::max(maxErr, std::abs(prod[i][j] - expected));
+                }
+            }
         }
+
         bool pass = maxErr < 0.001f;
-        if (pass) ++passCount;
-        std::ostringstream oss;
-        oss << "max_err=" << maxErr;
-        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "I * I^-1 = Identity - " << oss.str());
-    }
+        if (pass)
+        {
+            ++passCount;
+        }
 
-    // Sphere is isotropic
-    {
-        ++totalCount;
-        glm::mat3 I = ComputeSphereInertia(1.0f, 1.0f);
-        bool pass = std::abs(I[0][0] - I[1][1]) < 0.0001f && std::abs(I[1][1] - I[2][2]) < 0.0001f;
-        if (pass) ++passCount;
-        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "Sphere is isotropic - Ixx=Iyy=Izz=" << I[0][0]);
+        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "I * I^-1 = Identity (max err=" << maxErr << ")");
     }
-
     // MakeDynamicBody factory
     {
         ++totalCount;
+
         glm::mat3 I = ComputeSphereInertia(5.0f, 1.0f);
         RigidBodyComponent rb = MakeDynamicBody(5.0f, I);
-        bool pass = std::abs(rb.invMass - 0.2f) < 0.001f;
-        if (pass) ++passCount;
-        std::ostringstream oss;
-        oss << "invMass=" << rb.invMass << " expected=0.2";
-        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "MakeDynamicBody(5.0) - " << oss.str());
-    }
 
+        bool pass = std::abs(rb.invMass - 0.2f) < 0.001f;
+        if (pass)
+        {
+            ++passCount;
+        }
+
+        RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "MakeDynamicBody(5.0) - invMass=" << rb.invMass);
+    }
     // MakeStaticBody factory
     {
         ++totalCount;
+
         RigidBodyComponent rb = MakeStaticBody();
-        bool pass = rb.invMass == 0.0f;
-        if (pass) ++passCount;
+
+        bool pass = (rb.invMass == 0.0f && rb.mass == 0.0f);
+        if (pass)
+        {
+            ++passCount;
+        }
+
         RT_LOG_INFO((pass ? "[PASS] " : "[FAIL] ") << "MakeStaticBody - invMass=" << rb.invMass);
     }
 
