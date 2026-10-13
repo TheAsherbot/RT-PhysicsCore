@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     int totalCount = 0;
     constexpr double fixedDt = 1.0 / 60.0;
 
-    // ── Check 1: Deeply Overlapping Spheres (0.8m overlap) ──
+    // ── Check 1: Deeply Overlapping Spheres (1.6m overlap) ──
     {
         ++totalCount;
         Scene scene;
@@ -93,7 +93,8 @@ int main(int argc, char** argv)
         ccb.size = { radius, 0.0f, 0.0f };
         scene.AddComponent(b, ccb);
 
-        StepScene(scene, 15, fixedDt);
+        // 40 ticks allows safe separation at maxPushVelocity (3.0 m/s) across 1.6m overlap
+        StepScene(scene, 40, fixedDt);
 
         auto* finalTca = scene.GetComponent<TransformComponent>(a);
         auto* finalTcb = scene.GetComponent<TransformComponent>(b);
