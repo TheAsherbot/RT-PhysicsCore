@@ -11,12 +11,12 @@ namespace RT_PhysicsCore
 {
     namespace
     {
-        constexpr Real kCastEpsilon = 1e-12;
+        constexpr Real kCastEpsilon = 1e-6;
 
         Mat3 IntegrateRotation(const Mat3& initialRot, const Vec3& omega, Real dt)
         {
             Real angle = glm::length(omega) * dt;
-            if (angle < kCastEpsilon)
+            if (angle < 1e-12)
             {
                 return initialRot;
             }
@@ -42,6 +42,8 @@ namespace RT_PhysicsCore
         Real angSpeedA = glm::length(angVelA);
         Real angSpeedB = glm::length(angVelB);
 
+        GjkResult lastGjk;
+
         for (int iter = 0; iter < maxIterations; ++iter)
         {
             result.iterations++;
@@ -54,18 +56,18 @@ namespace RT_PhysicsCore
             currentCoreB.rotation = IntegrateRotation(coreB.rotation, angVelB, t * h);
 
             // Evaluate high-precision GJK distance at time t
-            GjkResult gjk = GJK::ComputeDistance(currentCoreA, currentCoreB);
+            lastGjk = GJK::ComputeDistance(currentCoreA, currentCoreB);
 
             // Relative linear velocity displacement vector: delta_disp = linDispB - linDispA
             // Closing velocity component along collision normal (normal directed A -> B):
             Vec3 relDisp = linDispB - linDispA;
-            Real linearClosingBound = std::max(0.0, -glm::dot(relDisp, gjk.normal));
+            Real linearClosingBound = std::max(0.0, -glm::dot(relDisp, lastGjk.normal));
 
             // Angular closing bound from rotational sweep of extremal vertices: ||omega|| * r * h
             Real angularClosingBound = (angSpeedA * boundRadiusA + angSpeedB * boundRadiusB) * h;
             Real totalClosingBound = linearClosingBound + angularClosingBound;
 
-            if (totalClosingBound < kCastEpsilon)
+            if (totalClosingBound < 1e-12)
             {
                 // Shapes are separating or stationary relative to normal; no collision along this trajectory
                 result.hasHit = false;
@@ -73,11 +75,10 @@ namespace RT_PhysicsCore
                 return result;
             }
 
-            if (gjk.distance <= targetGap)
+            if (lastGjk.distance <= targetGap)
             {
                 // If distance is already <= targetGap at the start of the substep (t < kCastEpsilon),
                 // the bodies started in contact. Discrete collision resolution handles resting/touching contacts.
-                // Reporting a CCD hit at t = 0.0 would clamp motion fraction to 0, permanently freezing bodies.
                 if (t < kCastEpsilon)
                 {
                     result.hasHit = false;
@@ -88,23 +89,22 @@ namespace RT_PhysicsCore
                 // Dynamic impact detected during advancement within security skin
                 result.hasHit = true;
                 result.timeOfImpact = t;
-                result.normal = gjk.normal;
-                result.contactPoint = 0.5 * (gjk.closestPointA + gjk.closestPointB);
+                result.normal = lastGjk.normal;
+                result.contactPoint = 0.5 * (lastGjk.closestPointA + lastGjk.closestPointB);
                 return result;
             }
 
             // Conservative advancement time step: delta_t = (d - targetGap) / closingBound
-            Real deltaT = (gjk.distance - targetGap) / totalClosingBound;
-            if (deltaT < kCastEpsilon)
+            Real deltaT = (lastGjk.distance - targetGap) / totalClosingBound;
+            if (deltaT < 1e-4)
             {
-                // If distance has converged to within numerical epsilon of targetGap mid-sweep,
-                // this represents an impact at time t.
+                // Converged within tolerance of the impact point
                 if (t >= kCastEpsilon)
                 {
                     result.hasHit = true;
                     result.timeOfImpact = t;
-                    result.normal = gjk.normal;
-                    result.contactPoint = 0.5 * (gjk.closestPointA + gjk.closestPointB);
+                    result.normal = lastGjk.normal;
+                    result.contactPoint = 0.5 * (lastGjk.closestPointA + lastGjk.closestPointB);
                     return result;
                 }
                 break;
@@ -121,7 +121,17 @@ namespace RT_PhysicsCore
             }
         }
 
-        // Reached iteration cap without impact; trajectory is clear up to 1.0
+        // If iteration cap was reached but body significantly closed in near the obstacle,
+        // clamp motion at time t to safely prevent tunneling through the wall.
+        if (t >= kCastEpsilon && lastGjk.distance <= (targetGap * 5.0))
+        {
+            result.hasHit = true;
+            result.timeOfImpact = t;
+            result.normal = lastGjk.normal;
+            result.contactPoint = 0.5 * (lastGjk.closestPointA + lastGjk.closestPointB);
+            return result;
+        }
+
         result.hasHit = false;
         result.timeOfImpact = 1.0;
         return result;

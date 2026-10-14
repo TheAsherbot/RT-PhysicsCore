@@ -33,7 +33,7 @@ namespace RT_PhysicsCore
         }
         outPoints[0] = inPoints[idx0];
 
-        // 2. Point farthest from Point 0
+        // 2. Point farthest from Point 0 (diagonal opposite)
         int idx1 = -1;
         Real maxDistSq = -1.0;
         for (int i = 0; i < inCount; ++i)
@@ -55,10 +55,10 @@ namespace RT_PhysicsCore
         {
             return 1;
         }
-        outPoints[1] = inPoints[idx1];
+        ContactPoint p1 = inPoints[idx1];
 
-        // 3. Point maximizing triangle area with (p0, p1)
-        Vec3 lineDir = outPoints[1].position - outPoints[0].position;
+        // 3. Point maximizing triangle area with (p0, p1) on side A
+        Vec3 lineDir = p1.position - outPoints[0].position;
         int idx2 = -1;
         Real maxTriangleArea = -1.0;
 
@@ -80,12 +80,13 @@ namespace RT_PhysicsCore
 
         if (idx2 == -1 || maxTriangleArea < 1e-12)
         {
+            outPoints[1] = p1;
             return 2;
         }
-        outPoints[2] = inPoints[idx2];
+        ContactPoint p2 = inPoints[idx2];
 
         // 4. Point maximizing quad area on opposite side of baseline (p0, p1)
-        Vec3 triNormal = glm::cross(lineDir, outPoints[2].position - outPoints[0].position);
+        Vec3 triNormal = glm::cross(lineDir, p2.position - outPoints[0].position);
         int idx3 = -1;
         Real maxQuadArea = -1.0;
 
@@ -131,9 +132,14 @@ namespace RT_PhysicsCore
 
         if (idx3 == -1)
         {
+            outPoints[1] = p1;
+            outPoints[2] = p2;
             return 3;
         }
 
+        // Return points in perimeter winding order: p0 -> p2 -> p1 -> p3
+        outPoints[1] = p2;
+        outPoints[2] = p1;
         outPoints[3] = inPoints[idx3];
         return 4;
     }

@@ -90,15 +90,19 @@ namespace RT_PhysicsCore
         const SimplexVertex& B = simplex.vertices[1];
         const SimplexVertex& C = simplex.vertices[0];
 
-        Vec3 ab = B.v - A.v;
-        Vec3 ac = C.v - A.v;
-        Vec3 ao = -A.v;
+        Vec3 a = A.v;
+        Vec3 b = B.v;
+        Vec3 c = C.v;
 
-        Real d1 = glm::dot(ab, ao);
-        Real d2 = glm::dot(ac, ao);
+        Vec3 ab = b - a;
+        Vec3 ac = c - a;
+        Vec3 ap = -a; // Vector from A to origin (0,0,0)
+
+        Real d1 = glm::dot(ab, ap);
+        Real d2 = glm::dot(ac, ap);
         if (d1 <= 0.0 && d2 <= 0.0)
         {
-            // Vertex A region
+            // Vertex A region: closest point is A
             simplex.vertices[0] = A;
             simplex.count = 1;
             outClosestPoint = A.v;
@@ -108,11 +112,12 @@ namespace RT_PhysicsCore
             return false;
         }
 
-        Real d3 = glm::dot(ab, B.v);
-        Real d4 = glm::dot(ac, B.v);
+        Vec3 bp = -b; // Vector from B to origin
+        Real d3 = glm::dot(ab, bp);
+        Real d4 = glm::dot(ac, bp);
         if (d3 >= 0.0 && d4 <= d3)
         {
-            // Vertex B region
+            // Vertex B region: closest point is B
             simplex.vertices[0] = B;
             simplex.count = 1;
             outClosestPoint = B.v;
@@ -123,7 +128,7 @@ namespace RT_PhysicsCore
         }
 
         // Edge AB region
-        Real vc = d1 * (-d4) - (-d3) * d2;
+        Real vc = d1 * d4 - d3 * d2;
         if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0)
         {
             Real v = d1 / (d1 - d3);
@@ -133,16 +138,17 @@ namespace RT_PhysicsCore
             outClosestPoint = A.v + v * ab;
             outClosestA = A.pA + v * (B.pA - A.pA);
             outClosestB = A.pB + v * (B.pB - A.pB);
-            searchDirection = glm::cross(glm::cross(ab, ao), ab);
+            searchDirection = glm::cross(glm::cross(ab, ap), ab);
             return false;
         }
 
-        Real d5 = glm::dot(ab, C.v);
-        Real d6 = glm::dot(ac, C.v);
+        Vec3 cp = -c; // Vector from C to origin
+        Real d5 = glm::dot(ab, cp);
+        Real d6 = glm::dot(ac, cp);
         if (d6 >= 0.0 && d5 <= d6)
         {
-            // Vertex C region
-            simplex.count = 1;
+            // Vertex C region: closest point is C
+            simplex.count = 1; // C is already at index 0
             outClosestPoint = C.v;
             outClosestA = C.pA;
             outClosestB = C.pB;
@@ -155,12 +161,28 @@ namespace RT_PhysicsCore
         if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0)
         {
             Real w = d2 / (d2 - d6);
-            simplex.vertices[1] = A; // C is already at 0
+            simplex.vertices[1] = A; // C is already at index 0
             simplex.count = 2;
             outClosestPoint = A.v + w * ac;
             outClosestA = A.pA + w * (C.pA - A.pA);
             outClosestB = A.pB + w * (C.pB - A.pB);
-            searchDirection = glm::cross(glm::cross(ac, ao), ac);
+            searchDirection = glm::cross(glm::cross(ac, ap), ac);
+            return false;
+        }
+
+        // Edge BC region
+        Real va = d3 * d6 - d5 * d4;
+        if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0)
+        {
+            Real w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+            simplex.vertices[0] = C;
+            simplex.vertices[1] = B;
+            simplex.count = 2;
+            Vec3 bc = c - b;
+            outClosestPoint = B.v + w * bc;
+            outClosestA = B.pA + w * (C.pA - B.pA);
+            outClosestB = B.pB + w * (C.pB - B.pB);
+            searchDirection = glm::cross(glm::cross(bc, bp), bc);
             return false;
         }
 
@@ -174,7 +196,6 @@ namespace RT_PhysicsCore
             return SolveSegment(simplex, searchDirection, outClosestPoint, outClosestA, outClosestB);
         }
 
-        Real va = d3 * d6 - d5 * d4;
         Real denom = 1.0 / (va + vb + vc);
         Real uA = va * denom;
         Real uB = vb * denom;
@@ -185,7 +206,7 @@ namespace RT_PhysicsCore
         outClosestB = uA * A.pB + uB * B.pB + uC * C.pB;
 
         // Search direction is triangle normal pointing toward origin
-        searchDirection = (glm::dot(n, ao) >= 0.0) ? n : -n;
+        searchDirection = (glm::dot(n, ap) >= 0.0) ? n : -n;
         return (glm::dot(outClosestPoint, outClosestPoint) < kGjkEpsilonSq);
     }
 
