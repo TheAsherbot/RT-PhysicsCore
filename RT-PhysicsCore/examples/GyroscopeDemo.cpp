@@ -74,17 +74,55 @@ int main()
     scene.AddComponent(spinner, srb);
 
     bool slowMo = false;
+    bool showFps = false;
+    float initialETumbler = -1.0f;
+    float initialESpinner = -1.0f;
+
+    auto resetSimulation = [&]()
+        {
+            auto* curTtc = scene.GetComponent<TransformComponent>(tumbler);
+            auto* curTrb = scene.GetComponent<RigidBodyComponent>(tumbler);
+            if (curTtc && curTrb)
+            {
+                curTtc->position = { -3.0f, 0.0f, 0.0f };
+                curTtc->rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+                *curTrb = MakeDynamicBody(1.0f, inertia);
+                curTrb->angularMomentum = { 0.01f, 0.01f, 3.0f };
+            }
+
+            auto* curStc = scene.GetComponent<TransformComponent>(spinner);
+            auto* curSrb = scene.GetComponent<RigidBodyComponent>(spinner);
+            if (curStc && curSrb)
+            {
+                curStc->position = { 3.0f, 0.0f, 0.0f };
+                curStc->rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+                *curSrb = MakeDynamicBody(1.0f, inertia);
+                curSrb->angularMomentum = { 0.01f, 3.0f, 0.01f };
+            }
+
+            initialETumbler = -1.0f;
+            initialESpinner = -1.0f;
+        };
 
     engine.SetUpdateCallback([&](double dt)
         {
             scene.SetDeltaTime(dt);
             scene.UpdateSystems();
 
-            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_SPACE))
+            auto& input = renderer.GetInput();
+            if (input.WasKeyPressed(GLFW_KEY_F3))
+            {
+                showFps = !showFps;
+            }
+            if (input.WasKeyPressed(GLFW_KEY_SPACE))
             {
                 slowMo = !slowMo;
             }
-            if (renderer.ShouldClose())
+            if (input.WasKeyPressed(GLFW_KEY_R))
+            {
+                resetSimulation();
+            }
+            if (input.WasKeyPressed(GLFW_KEY_ESCAPE) || renderer.ShouldClose())
             {
                 engine.RequestExit();
             }
@@ -121,9 +159,6 @@ int main()
                 DebugDraw::Line(tc->position, tc->position + rot[2] * 1.5f, { 0.2f, 0.2f, 1.0f }, false);
             }
 
-            static float initialETumbler = -1.0f;
-            static float initialESpinner = -1.0f;
-
             auto* trbPtr = scene.GetComponent<RigidBodyComponent>(tumbler);
             auto* srbPtr = scene.GetComponent<RigidBodyComponent>(spinner);
 
@@ -139,12 +174,30 @@ int main()
                 initialESpinner = curESpinner;
             }
 
-            float driftTumbler = std::abs(curETumbler - initialETumbler) / initialETumbler * 100.0f;
-            float driftSpinner = std::abs(curESpinner - initialESpinner) / initialESpinner * 100.0f;
+            float driftTumbler = (initialETumbler > 0.0f) ? std::abs(curETumbler - initialETumbler) / initialETumbler * 100.0f : 0.0f;
+            float driftSpinner = (initialESpinner > 0.0f) ? std::abs(curESpinner - initialESpinner) / initialESpinner * 100.0f : 0.0f;
 
-            ImGui::SetNextWindowPos(ImVec2(10, 10));
+            if (showFps)
+            {
+                ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+                ImGui::SetNextWindowBgAlpha(0.65f);
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings |
+                    ImGuiWindowFlags_NoFocusOnAppearing |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoMove;
+                if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "FPS: %.1f (%.2f ms)",
+                        ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                }
+                ImGui::End();
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(10.0f, showFps ? 45.0f : 10.0f), ImGuiCond_Always);
             ImGui::Begin("Gyroscope Dynamics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-            ImGui::Text("Space: Toggle Slow-Mo (%s)", slowMo ? "ON" : "OFF");
+            ImGui::Text("Space: Toggle Slow-Mo (%s) | R: Reset", slowMo ? "ON" : "OFF");
             ImGui::Separator();
 
             ImGui::Text("TUMBLER (Intermediate Axis)");

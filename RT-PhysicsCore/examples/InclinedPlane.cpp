@@ -153,16 +153,23 @@ int main()
     spawnObjects();
 
     float rampAngleDeg = 0.0f;
+    bool showFps = false;
 
     engine.SetUpdateCallback([&](double dt)
         {
             scene.SetDeltaTime(dt);
             scene.UpdateSystems();
-            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_R))
+
+            auto& input = renderer.GetInput();
+            if (input.WasKeyPressed(GLFW_KEY_F3))
+            {
+                showFps = !showFps;
+            }
+            if (input.WasKeyPressed(GLFW_KEY_R))
             {
                 spawnObjects();
             }
-            if (renderer.ShouldClose())
+            if (input.WasKeyPressed(GLFW_KEY_ESCAPE) || renderer.ShouldClose())
             {
                 engine.RequestExit();
             }
@@ -200,7 +207,25 @@ int main()
             renderer.BeginFrame();
             scene.RenderUpdateSystems();
 
-            ImGui::SetNextWindowPos(ImVec2(10, 10));
+            if (showFps)
+            {
+                ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+                ImGui::SetNextWindowBgAlpha(0.65f);
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings |
+                    ImGuiWindowFlags_NoFocusOnAppearing |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoMove;
+                if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "FPS: %.1f (%.2f ms)",
+                        ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                }
+                ImGui::End();
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(10.0f, showFps ? 45.0f : 10.0f), ImGuiCond_Always);
             ImGui::Begin("Inclined Plane Laboratory", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::SliderFloat("Ramp Angle", &rampAngleDeg, -60.0f, 60.0f, "%.1f deg");
             if (ImGui::Button("Reset Angle"))

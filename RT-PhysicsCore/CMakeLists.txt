@@ -14,3 +14,4 @@ target_link_libraries(RT-PhysicsCore PRIVATE glad)
 target_link_libraries(RT-PhysicsCore PRIVATE imgui)
 target_link_libraries(RT-PhysicsCore PRIVATE RT_PhysicsEngine)
 target_include_directories(RT_PhysicsEngine PUBLIC ${CMAKE_SOURCE_DIR}/RT-PhysicsCore/include)
+

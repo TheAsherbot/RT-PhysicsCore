@@ -5,11 +5,9 @@
 
 #include <memory>
 #include <random>
+#include <vector>
 #include <GLFW/glfw3.h>
-
-#include "RT-PhysicsCore/telemetry/TelemetryOverlay.h"
-#include "RT-PhysicsCore/telemetry/TelemetryManager.h"
-#include "RT-PhysicsCore/telemetry/ProfilerWindow.h"
+#include <imgui/imgui.h>
 
 #include "RT-PhysicsCore/core/Engine.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
@@ -27,11 +25,6 @@
 int main()
 {
     using namespace RT_PhysicsCore;
-
-    TelemetryManager::Get().Initialize();
-    TelemetryManager::Get().SetMode(TelemetryMode::Minimal);
-    TelemetryOverlay overlay;
-    ProfilerWindow profilerWindow;
 
     Renderer renderer(1280, 720, "Example: Shape Soup");
     if (!renderer.IsValid())
@@ -75,66 +68,75 @@ int main()
     makeWall({ -8.5f, 4.0f, 0.0f }, { 0.5f, 4.0f, 8.0f });  // left
     makeWall({ 8.5f, 4.0f, 0.0f }, { 0.5f, 4.0f, 8.0f });   // right
 
-    std::mt19937 rng(1337);
-    std::uniform_real_distribution<float> posDist(-6.0f, 6.0f);
-    std::uniform_real_distribution<float> velDist(-5.0f, 5.0f);
-    std::uniform_real_distribution<float> sizeDist(0.3f, 0.6f);
-    std::uniform_real_distribution<float> colDist(0.3f, 1.0f);
+    std::vector<Entity> soupEntities;
 
-    for (int i = 0; i < 150; ++i)
-    {
-        Entity e = scene.CreateEntity();
-        TransformComponent tc;
-        tc.position = { posDist(rng), 2.0f + static_cast<float>(i) * 0.1f, posDist(rng) };
-        float s = sizeDist(rng);
-        tc.scale = { s * 2.0f, s * 2.0f, s * 2.0f };
-        scene.AddComponent(e, tc);
+    auto spawnSoup = [&]()
+        {
+            for (Entity e : soupEntities)
+            {
+                scene.DestroyEntity(e);
+            }
+            soupEntities.clear();
 
-        bool isBox = posDist(rng) > 0.0f;
-        MeshComponent mc;
-        mc.shape = isBox ? PrimitiveShape::Cube : PrimitiveShape::Sphere;
-        mc.color = { colDist(rng), colDist(rng), colDist(rng) };
-        scene.AddComponent(e, mc);
+            std::mt19937 rng(1337);
+            std::uniform_real_distribution<float> posDist(-6.0f, 6.0f);
+            std::uniform_real_distribution<float> velDist(-5.0f, 5.0f);
+            std::uniform_real_distribution<float> sizeDist(0.3f, 0.6f);
+            std::uniform_real_distribution<float> colDist(0.3f, 1.0f);
 
-        float mass = s * s * s * 10.0f;
-        RigidBodyComponent rb = MakeDynamicBody(mass,
-            isBox ? ComputeBoxInertia(mass, glm::vec3(s)) : ComputeSphereInertia(mass, s));
-        rb.velocity = { velDist(rng), velDist(rng), velDist(rng) };
-        scene.AddComponent(e, rb);
+            for (int i = 0; i < 150; ++i)
+            {
+                Entity e = scene.CreateEntity();
+                TransformComponent tc;
+                tc.position = { posDist(rng), 2.0f + static_cast<float>(i) * 0.1f, posDist(rng) };
+                float s = sizeDist(rng);
+                tc.scale = { s * 2.0f, s * 2.0f, s * 2.0f };
+                scene.AddComponent(e, tc);
 
-        ColliderComponent cc;
-        cc.shape = isBox ? ColliderShape::Box : ColliderShape::Sphere;
-        cc.size = { s, s, s };
-        scene.AddComponent(e, cc);
+                bool isBox = posDist(rng) > 0.0f;
+                MeshComponent mc;
+                mc.shape = isBox ? PrimitiveShape::Cube : PrimitiveShape::Sphere;
+                mc.color = { colDist(rng), colDist(rng), colDist(rng) };
+                scene.AddComponent(e, mc);
 
-        PhysicsMaterialComponent pm;
-        pm.material = MaterialId::HardRubber;
-        scene.AddComponent(e, pm);
-    }
+                float mass = s * s * s * 10.0f;
+                RigidBodyComponent rb = MakeDynamicBody(mass,
+                    isBox ? ComputeBoxInertia(mass, glm::vec3(s)) : ComputeSphereInertia(mass, s));
+                rb.velocity = { velDist(rng), velDist(rng), velDist(rng) };
+                scene.AddComponent(e, rb);
+
+                ColliderComponent cc;
+                cc.shape = isBox ? ColliderShape::Box : ColliderShape::Sphere;
+                cc.size = { s, s, s };
+                scene.AddComponent(e, cc);
+
+                PhysicsMaterialComponent pm;
+                pm.material = MaterialId::HardRubber;
+                scene.AddComponent(e, pm);
+
+                soupEntities.push_back(e);
+            }
+        };
+
+    spawnSoup();
+
+    bool showFps = false;
 
     engine.SetUpdateCallback([&](double dt)
         {
             scene.SetDeltaTime(dt);
             scene.UpdateSystems();
 
-            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F3))
+            auto& input = renderer.GetInput();
+            if (input.WasKeyPressed(GLFW_KEY_F3))
             {
-                auto& tm = TelemetryManager::Get();
-                if (tm.GetMode() == TelemetryMode::Minimal)
-                {
-                    tm.SetMode(TelemetryMode::Full);
-                    if (!profilerWindow.IsOpen())
-                    {
-                        profilerWindow.Open(renderer.GetWindow());
-                    }
-                }
-                else
-                {
-                    tm.SetMode(TelemetryMode::Minimal);
-                    profilerWindow.Close(renderer.GetWindow());
-                }
+                showFps = !showFps;
             }
-            if (renderer.ShouldClose())
+            if (input.WasKeyPressed(GLFW_KEY_R))
+            {
+                spawnSoup();
+            }
+            if (input.WasKeyPressed(GLFW_KEY_ESCAPE) || renderer.ShouldClose())
             {
                 engine.RequestExit();
             }
@@ -150,13 +152,28 @@ int main()
         {
             renderer.BeginFrame();
             scene.RenderUpdateSystems();
-            overlay.Render();
+
+            if (showFps)
+            {
+                ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+                ImGui::SetNextWindowBgAlpha(0.65f);
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings |
+                    ImGuiWindowFlags_NoFocusOnAppearing |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoMove;
+                if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "FPS: %.1f (%.2f ms)",
+                        ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                }
+                ImGui::End();
+            }
+
             renderer.EndFrame();
-            profilerWindow.Render(renderer.GetWindow());
         });
 
     engine.Run();
-    profilerWindow.Close(renderer.GetWindow());
-    TelemetryManager::Get().Shutdown();
     return 0;
 }

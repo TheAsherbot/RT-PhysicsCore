@@ -7,10 +7,7 @@
 #include <random>
 #include <vector>
 #include <GLFW/glfw3.h>
-
-#include "RT-PhysicsCore/telemetry/TelemetryOverlay.h"
-#include "RT-PhysicsCore/telemetry/TelemetryManager.h"
-#include "RT-PhysicsCore/telemetry/ProfilerWindow.h"
+#include <imgui/imgui.h>
 
 #include "RT-PhysicsCore/core/Engine.h"
 #include "RT-PhysicsCore/utils/Log.h"
@@ -28,7 +25,6 @@
 #include "RT-PhysicsCore/rendering/components/MeshComponent.h"
 
 #include <glm/gtc/quaternion.hpp>
-#include <imgui/imgui.h>
 
 namespace
 {
@@ -48,11 +44,6 @@ namespace
 int main()
 {
     using namespace RT_PhysicsCore;
-
-    TelemetryManager::Get().Initialize();
-    TelemetryManager::Get().SetMode(TelemetryMode::Minimal);
-    TelemetryOverlay overlay;
-    ProfilerWindow profilerWindow;
 
     Renderer renderer(1280, 720, "Example: Falling Boxes");
     if (!renderer.IsValid())
@@ -98,22 +89,42 @@ int main()
 
     bool drawContacts = false;
     bool drawNormals = false;
+    bool showFps = false;
+
+    auto resetSimulation = [&]()
+        {
+            for (const auto& box : activeBoxes)
+            {
+                scene.DestroyEntity(box.entity);
+            }
+            activeBoxes.clear();
+            totalTime = 0.0;
+            spawnTimer = 0.0;
+        };
 
     engine.SetUpdateCallback([&](double dt)
         {
             scene.SetDeltaTime(dt);
             scene.UpdateSystems();
 
-            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F1))
+            auto& input = renderer.GetInput();
+            if (input.WasKeyPressed(GLFW_KEY_F1))
             {
                 drawContacts = !drawContacts;
             }
-            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_F2))
+            if (input.WasKeyPressed(GLFW_KEY_F2))
             {
                 drawNormals = !drawNormals;
             }
-
-            if (renderer.ShouldClose() || renderer.GetInput().WasKeyPressed(GLFW_KEY_ESCAPE))
+            if (input.WasKeyPressed(GLFW_KEY_F3))
+            {
+                showFps = !showFps;
+            }
+            if (input.WasKeyPressed(GLFW_KEY_R))
+            {
+                resetSimulation();
+            }
+            if (input.WasKeyPressed(GLFW_KEY_ESCAPE) || renderer.ShouldClose())
             {
                 engine.RequestExit();
             }
@@ -199,11 +210,28 @@ int main()
             }
 
             renderer.FlushDebugDraw();
-            overlay.Render();
+
+            if (showFps)
+            {
+                ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+                ImGui::SetNextWindowBgAlpha(0.65f);
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings |
+                    ImGuiWindowFlags_NoFocusOnAppearing |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoMove;
+                if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "FPS: %.1f (%.2f ms)",
+                        ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                }
+                ImGui::End();
+            }
+
             renderer.EndFrame();
         });
 
     engine.Run();
-    TelemetryManager::Get().Shutdown();
     return 0;
 }

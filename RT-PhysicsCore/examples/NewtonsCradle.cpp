@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <imgui/imgui.h>
 
 #include "RT-PhysicsCore/core/Engine.h"
 #include "RT-PhysicsCore/core/ecs/core/Scene.h"
@@ -42,8 +43,12 @@ int main()
     scene.AddSystem(std::make_unique<RenderSystem>(scene, renderer));
 
     std::vector<Entity> balls;
+    int currentPullCount = 1;
+    bool showFps = false;
+
     auto setup = [&](int pullCount)
         {
+            currentPullCount = pullCount;
             for (Entity e : balls)
             {
                 scene.DestroyEntity(e);
@@ -99,6 +104,14 @@ int main()
             scene.UpdateSystems();
 
             auto& input = renderer.GetInput();
+            if (input.WasKeyPressed(GLFW_KEY_F3))
+            {
+                showFps = !showFps;
+            }
+            if (input.WasKeyPressed(GLFW_KEY_R))
+            {
+                setup(currentPullCount);
+            }
             if (input.WasKeyPressed(GLFW_KEY_1))
             {
                 setup(1);
@@ -112,7 +125,7 @@ int main()
                 setup(3);
             }
 
-            if (renderer.ShouldClose())
+            if (input.WasKeyPressed(GLFW_KEY_ESCAPE) || renderer.ShouldClose())
             {
                 engine.RequestExit();
             }
@@ -153,6 +166,24 @@ int main()
                         tc->position + glm::vec3(0.0f, 0.6f, 0.0f) + rb->velocity * 0.2f,
                         { 0.0f, 1.0f, 1.0f }, false);
                 }
+            }
+
+            if (showFps)
+            {
+                ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+                ImGui::SetNextWindowBgAlpha(0.65f);
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings |
+                    ImGuiWindowFlags_NoFocusOnAppearing |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoMove;
+                if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "FPS: %.1f (%.2f ms)",
+                        ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                }
+                ImGui::End();
             }
 
             renderer.FlushDebugDraw();

@@ -1,12 +1,13 @@
 /**
  * @file BouncingBalls.cpp
- * @brief Restitution and material interaction demo.
+ * @brief Restitution and material interaction demo with robust apex bounce tracking.
  */
 
 #include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
 
@@ -86,6 +87,12 @@ int main()
     std::vector<std::vector<float>> peakHeights(5);
     std::vector<glm::vec3> peakMarkers;
 
+    // Ascent state and peak tracking per ball
+    std::vector<bool> wasAscending(5, false);
+    std::vector<float> maxAscentHeight(5, 0.0f);
+
+    bool showFps = false;
+
     auto spawnBalls = [&]()
         {
             for (Entity e : ballEntities)
@@ -95,6 +102,8 @@ int main()
             ballEntities.clear();
             peakHeights.assign(5, std::vector<float>());
             peakMarkers.clear();
+            wasAscending.assign(5, false);
+            maxAscentHeight.assign(5, 0.0f);
 
             for (size_t i = 0; i < balls.size(); ++i)
             {
@@ -128,11 +137,17 @@ int main()
         {
             scene.SetDeltaTime(dt);
             scene.UpdateSystems();
-            if (renderer.GetInput().WasKeyPressed(GLFW_KEY_R))
+
+            auto& input = renderer.GetInput();
+            if (input.WasKeyPressed(GLFW_KEY_F3))
+            {
+                showFps = !showFps;
+            }
+            if (input.WasKeyPressed(GLFW_KEY_R))
             {
                 spawnBalls();
             }
-            if (renderer.ShouldClose())
+            if (input.WasKeyPressed(GLFW_KEY_ESCAPE) || renderer.ShouldClose())
             {
                 engine.RequestExit();
             }
@@ -143,20 +158,47 @@ int main()
             scene.SetFixedDeltaTime(dt);
             scene.FixedUpdateSystems();
 
-            // Track peaks
+            // Track peaks via velocity sign reversal and ascent tracking
             for (size_t i = 0; i < ballEntities.size(); ++i)
             {
                 auto* tc = scene.GetComponent<TransformComponent>(ballEntities[i]);
                 auto* rb = scene.GetComponent<RigidBodyComponent>(ballEntities[i]);
 
-                if (rb->velocity.y <= 0.0f && rb->velocity.y > -0.1f && tc->position.y > 0.5f)
+                if (!tc || !rb)
                 {
-                    // Found an apex
-                    if (peakHeights[i].empty() || std::abs(peakHeights[i].back() - tc->position.y) > 0.1f)
+                    continue;
+                }
+
+                float vy = static_cast<float>(rb->velocity.y);
+                float y = static_cast<float>(tc->position.y);
+
+                // Rebounding upward: track the ascent
+                if (vy > 0.05f)
+                {
+                    wasAscending[i] = true;
+                    if (y > maxAscentHeight[i])
                     {
-                        peakHeights[i].push_back(tc->position.y);
-                        peakMarkers.push_back(tc->position);
+                        maxAscentHeight[i] = y;
                     }
+                }
+                // Reached apex: velocity has transitioned from positive to negative
+                else if (wasAscending[i] && vy <= 0.0f)
+                {
+                    wasAscending[i] = false;
+                    float peakY = std::max(maxAscentHeight[i], y);
+
+                    // Ensure this is an actual rebound above resting contact height (radius = 0.4m)
+                    if (peakY > 0.45f)
+                    {
+                        // Prevent duplicates if velocity lingers near zero for consecutive steps
+                        if (peakHeights[i].empty() || std::abs(peakHeights[i].back() - peakY) > 0.05f)
+                        {
+                            peakHeights[i].push_back(peakY);
+                            peakMarkers.push_back({ tc->position.x, peakY, tc->position.z });
+                        }
+                    }
+
+                    maxAscentHeight[i] = 0.0f;
                 }
             }
         });
@@ -171,9 +213,27 @@ int main()
                 DebugDraw::Sphere(marker, 0.1f, { 1.0f, 1.0f, 1.0f }, 8, false);
             }
 
-            ImGui::SetNextWindowPos(ImVec2(10, 10));
+            if (showFps)
+            {
+                ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+                ImGui::SetNextWindowBgAlpha(0.65f);
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration |
+                    ImGuiWindowFlags_AlwaysAutoResize |
+                    ImGuiWindowFlags_NoSavedSettings |
+                    ImGuiWindowFlags_NoFocusOnAppearing |
+                    ImGuiWindowFlags_NoNav |
+                    ImGuiWindowFlags_NoMove;
+                if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "FPS: %.1f (%.2f ms)",
+                        ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+                }
+                ImGui::End();
+            }
+
+            ImGui::SetNextWindowPos(ImVec2(10.0f, showFps ? 45.0f : 10.0f), ImGuiCond_Always);
             ImGui::Begin("Material Bounciness", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-            ImGui::Text("Press 'R' to reset");
+            ImGui::Text("Press 'R' to reset | 'F3' to toggle FPS");
             ImGui::Separator();
             for (size_t i = 0; i < balls.size(); ++i)
             {
