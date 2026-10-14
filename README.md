@@ -176,9 +176,10 @@ RT-PhysicsCore/
 
 Detailed technical documentation lives in [`RT-PhysicsCore/docs/`](RT-PhysicsCore/docs/):
 
-- [**Physics Design**](RT-PhysicsCore/docs/physics_design.md) — Dynamics integration, DLM splitting, inertia tensors, collision algorithms, CCD, warm-starting, island graph partitioning, LCP formulation, Coulomb cone friction, and solver theory.
 - [**Architecture Specification**](RT-PhysicsCore/docs/architecture.md) — Multi-layer engine architecture, lifecycle flow, ECS mechanics, and system coordination.
+- [**Performance & Validation**](RT-PhysicsCore/docs/benchmarks.md) — Narrowphase query throughput, ECS benchmarks, and physical conservation metrics.
 - [**Engine Core**](RT-PhysicsCore/docs/engine_core.md) — ECS architecture, transform hierarchy math, fixed timestep loop, rendering pipeline, input system, and debug draw specifications.
+- [**Physics Design**](RT-PhysicsCore/docs/physics_design.md) — Dynamics integration, DLM splitting, inertia tensors, collision algorithms, CCD, warm-starting, island graph partitioning, LCP formulation, Coulomb cone friction, and solver theory.
 - [**Telemetry & Profiling**](RT-PhysicsCore/docs/telemetry_system.md) — Scoped profiling macros, lock-free memory tracking, Chrome Tracing serialization, dual-window OpenGL context sharing, and offline viewer replay.
 
 ---
