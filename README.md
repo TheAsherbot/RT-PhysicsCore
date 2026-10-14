@@ -2,7 +2,13 @@
 
 A real-time 3D rigid body physics engine built from scratch in **C++17** with a custom Entity-Component-System architecture, high-precision double-precision dynamics, island-based constraint solvers, continuous collision detection, telemetry profiling tools, and an integrated OpenGL 3.3 debug renderer.
 
-> **Status:** Active Development · [Physics Design Doc](RT-PhysicsCore/docs/physics_design.md) · [Engine Architecture Doc](RT-PhysicsCore/docs/engine_core.md)
+[![CI](https://github.com/TheAsherbot/RT-PhysicsCore/actions/workflows/ci.yml/badge.svg)](https://github.com/TheAsherbot/RT-PhysicsCore/actions)
+![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Release](https://img.shields.io/badge/Release-v1.0.0-orange.svg)
+
+> **Status:** v1.0.0 Release · [Physics Design Doc](RT-PhysicsCore/docs/physics_design.md) · [Engine Architecture Doc](RT-PhysicsCore/docs/engine_core.md) · [Benchmarks](RT-PhysicsCore/docs/benchmarks.md)
 
 ---
 
@@ -10,9 +16,9 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
 
 | Symplectic DLM Integration (Dzhanibekov Effect) | Contact Stacking & Warm-Starting |
 |:---:|:---:|
-| ![Dzhanibekov Tumbling](RT-PhysicsCore/docs/media/DzhanibekovDemo.gif) | ![Domino Chain](RT-PhysicsCore/docs/media/DominoChain.gif) |
+| ![Dzhanibekov Tumbling](RT-PhysicsCore/docs/media/dzhanibekov.gif) | ![Domino Chain](RT-PhysicsCore/docs/media/domino_chain.gif) |
 | **Restitution & Momentum Transfer** | **Real-Time Profiler & Telemetry HUD** |
-| ![Newton's Cradle](RT-PhysicsCore/docs/media/NewtonsCradle.gif) | ![Telemetry Overlay](RT-PhysicsCore/docs/media/ProfilerViewer.gif) |
+| ![Newton's Cradle](RT-PhysicsCore/docs/media/newtons_cradle.gif) | ![Telemetry Overlay](RT-PhysicsCore/docs/media/profiler.gif) |
 
 ---
 
