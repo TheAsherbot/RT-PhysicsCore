@@ -2,5 +2,8 @@
 
 add_executable(ECSTests_TransformHierarchy TransformHierarchyTest.cpp)
 target_link_libraries(ECSTests_TransformHierarchy PRIVATE glad RT_PhysicsEngine)
-
 add_test(NAME ECSTests_TransformHierarchy COMMAND ECSTests_TransformHierarchy)
+
+add_executable(ECSTests_Lifecycle ECSLifecycleTest.cpp)
+target_link_libraries(ECSTests_Lifecycle PRIVATE glad RT_PhysicsEngine)
+add_test(NAME ECSTests_Lifecycle COMMAND ECSTests_Lifecycle)

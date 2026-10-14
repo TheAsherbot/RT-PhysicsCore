@@ -43,3 +43,11 @@ add_test(NAME PhysicsTests_ContinuousCollision COMMAND PhysicsTests_ContinuousCo
 add_executable(PhysicsTests_ManifoldReduction ManifoldReductionTest.cpp)
 target_link_libraries(PhysicsTests_ManifoldReduction PRIVATE glad RT_PhysicsEngine)
 add_test(NAME PhysicsTests_ManifoldReduction COMMAND PhysicsTests_ManifoldReduction)
+
+add_executable(PhysicsTests_IslandBuilder IslandBuilderTest.cpp)
+target_link_libraries(PhysicsTests_IslandBuilder PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_IslandBuilder COMMAND PhysicsTests_IslandBuilder)
+
+add_executable(PhysicsTests_ContactCache ContactCacheTest.cpp)
+target_link_libraries(PhysicsTests_ContactCache PRIVATE glad RT_PhysicsEngine)
+add_test(NAME PhysicsTests_ContactCache COMMAND PhysicsTests_ContactCache)

@@ -1,5 +1,5 @@
 /**
- * @file main.cpp
+ * @file ProfilerApplication.cpp
  * @brief Entry point for the standalone RT Profiler Viewer application.
  */
 
