@@ -127,9 +127,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "..\..\include\imgui\imgui.h"
+#include <imgui/imgui.h>
 #ifndef IMGUI_DISABLE
-#include "..\..\include\imgui\backend\imgui_impl_opengl3.h"
+#include <imgui/backend/imgui_impl_opengl3.h>
 #include <stdio.h>
 #include <stdint.h>     // intptr_t
 #if defined(__APPLE__)

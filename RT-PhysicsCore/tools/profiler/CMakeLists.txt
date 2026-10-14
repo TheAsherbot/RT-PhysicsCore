@@ -3,9 +3,9 @@
 add_executable(RT-ProfilerViewer ProfilerApplication.cpp)
 
 target_link_libraries(RT-ProfilerViewer PRIVATE
+    RT_PhysicsEngine
     glad
     imgui
-    RT_PhysicsEngine
 )
 
 target_include_directories(RT-ProfilerViewer PRIVATE

@@ -1,25 +1,25 @@
-# RT-PhysicsCore\examples\CMakeLists.txt
+# RT-PhysicsCore/examples/CMakeLists.txt
 
 add_executable(Example_FallingBoxes FallingBoxes.cpp)
-target_link_libraries(Example_FallingBoxes PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_FallingBoxes PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_BouncingBalls BouncingBalls.cpp)
-target_link_libraries(Example_BouncingBalls PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_BouncingBalls PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_NewtonsCradle NewtonsCradle.cpp)
-target_link_libraries(Example_NewtonsCradle PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_NewtonsCradle PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_DominoChain DominoChain.cpp)
-target_link_libraries(Example_DominoChain PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_DominoChain PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_InclinedPlane InclinedPlane.cpp)
-target_link_libraries(Example_InclinedPlane PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_InclinedPlane PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_GyroscopeDemo GyroscopeDemo.cpp)
-target_link_libraries(Example_GyroscopeDemo PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_GyroscopeDemo PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_ShapeSoup ShapeSoup.cpp)
-target_link_libraries(Example_ShapeSoup PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_ShapeSoup PRIVATE RT_PhysicsEngine glad imgui)
 
 add_executable(Example_WreckingBall WreckingBall.cpp)
-target_link_libraries(Example_WreckingBall PRIVATE glad imgui RT_PhysicsEngine)
+target_link_libraries(Example_WreckingBall PRIVATE RT_PhysicsEngine glad imgui)

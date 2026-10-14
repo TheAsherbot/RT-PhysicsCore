@@ -1,6 +1,7 @@
 .vs/
 out/
 build/
+build-linux/
 CMakeFiles/
 CMakeCache.txt
 GEMINI.md
