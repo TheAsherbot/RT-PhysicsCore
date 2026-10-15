@@ -16,9 +16,9 @@ A real-time 3D rigid body physics engine built from scratch in **C++17** with a 
 
 | Symplectic DLM Integration (Dzhanibekov Effect) | Contact Stacking & Warm-Starting |
 |:---:|:---:|
-| ![Dzhanibekov Tumbling](RT-PhysicsCore/docs/media/dzhanibekov.gif) | ![Domino Chain](RT-PhysicsCore/docs/media/domino_chain.gif) |
+| ![Dzhanibekov Tumbling](RT-PhysicsCore/docs/media/DominoChain.gif) | ![Domino Chain](RT-PhysicsCore/docs/media/DzhanibekovDemo.gif) |
 | **Restitution & Momentum Transfer** | **Real-Time Profiler & Telemetry HUD** |
-| ![Newton's Cradle](RT-PhysicsCore/docs/media/newtons_cradle.gif) | ![Telemetry Overlay](RT-PhysicsCore/docs/media/profiler.gif) |
+| ![Newton's Cradle](RT-PhysicsCore/docs/media/NewtonsCradle.gif) | ![Telemetry Overlay](RT-PhysicsCore/docs/media/ProfilerViewer.gif) |
 
 ---
 
