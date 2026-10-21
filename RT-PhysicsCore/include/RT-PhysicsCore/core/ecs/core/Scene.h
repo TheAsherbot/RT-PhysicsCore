@@ -112,6 +112,16 @@ namespace RT_PhysicsCore
         std::vector<Entity> Query() const;
 
         /**
+         * @brief Iterates over all entities possessing all requested component types without allocating a vector.
+         * @tparam First The primary component type whose dense array drives iteration (specify the rarest component first).
+         * @tparam Rest Additional required component types.
+         * @tparam Func Invocable with signature void(Entity, First&, Rest&...).
+         * @param func Callback executed for each matching entity.
+         */
+        template<typename First, typename... Rest, typename Func>
+        void Each(Func&& func);
+
+        /**
          * @brief Adds and transfers ownership of an ISystem to the scene.
          * @param system Unique pointer to the system instance.
          */
@@ -282,6 +292,39 @@ namespace RT_PhysicsCore
         }
 
         return result;
+    }
+
+    template<typename First, typename... Rest, typename Func>
+    void Scene::Each(Func&& func)
+    {
+        auto* firstStorage = GetStorage<First>();
+        if (!firstStorage)
+        {
+            return;
+        }
+        std::tuple<ComponentStorage<Rest>*...> restStorages{ GetStorage<Rest>()... };
+        bool allValid = std::apply([](auto*... s)
+            {
+                return ((s != nullptr) && ...);
+            }, restStorages);
+        if (!allValid)
+        {
+            return;
+        }
+        const auto& entities = firstStorage->GetEntities();
+        auto& firstComponents = firstStorage->GetComponents();
+        for (std::size_t i = 0; i < entities.size(); ++i)
+        {
+            Entity e = entities[i];
+            bool match = std::apply([e](auto*... s)
+                {
+                    return (s->Has(e) && ...);
+                }, restStorages);
+            if (match)
+            {
+                func(e, firstComponents[i], *std::get<ComponentStorage<Rest>*>(restStorages)->Get(e)...);
+            }
+        }
     }
 
     template<typename T>

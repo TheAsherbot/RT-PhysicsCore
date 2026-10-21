@@ -64,10 +64,11 @@ int main()
     // 3. Query
     auto t5 = std::chrono::high_resolution_clock::now();
     int hitCount = 0;
-    for (Entity e : scene.Query<TransformComponent, RigidBodyComponent>())
-    {
-        ++hitCount;
-    }
+    scene.Each<TransformComponent, RigidBodyComponent>([&](Entity e, TransformComponent& t, RigidBodyComponent& rb)
+        {
+            ++hitCount;
+        });
+    
     auto t6 = std::chrono::high_resolution_clock::now();
     LogTime("Query<Transform, RigidBody>", count, std::chrono::duration<double, std::milli>(t6 - t5).count());
 

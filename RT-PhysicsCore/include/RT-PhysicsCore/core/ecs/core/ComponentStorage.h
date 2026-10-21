@@ -65,6 +65,12 @@ namespace RT_PhysicsCore
         const std::vector<T>& GetComponents() const;
 
         /**
+         * @brief Provides direct mutable access to the contiguous array of components.
+         * @return Reference to the packed component vector.
+         */
+        std::vector<T>& GetComponents();
+
+        /**
          * @brief Provides direct read-only access to the dense array of corresponding entity IDs.
          * @return Const reference to the entity vector matched 1:1 with GetComponents().
          */
@@ -159,6 +165,12 @@ namespace RT_PhysicsCore
 
     template<typename T>
     const std::vector<T>& ComponentStorage<T>::GetComponents() const
+    {
+        return components;
+    }
+
+    template<typename T>
+    std::vector<T>& ComponentStorage<T>::GetComponents()
     {
         return components;
     }
